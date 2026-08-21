@@ -30,7 +30,7 @@ export class ThaiWaterService {
 
   private ttlMs: number;
   private pollIntervalMs: number;
-  private pollTimer: NodeJS.Timeout | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
   private clientOptions: ThaiWaterClientOptions;
 
   // In-flight request deduplication (Single Flight)

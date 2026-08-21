@@ -38,3 +38,8 @@ coverage/
 # Temporary files & cache
 .temp/
 .cache/
+
+# Cloudflare Workers / Wrangler
+.wrangler/
+.dev.vars
+.mf/

@@ -7,9 +7,9 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/server.ts",
-    "start": "node dist/server.js",
-    "demo": "tsx src/demo.ts",
+    "dev": "wrangler dev",
+    "dev:node": "tsx src/server.ts",
+    "deploy": "wrangler deploy",
     "test": "tsx src/test.ts"
   },
   "keywords": [
@@ -22,14 +22,17 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260821.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "wrangler": "^4.125.0"
   },
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "hono": "^4.13.3"
   }
 }
