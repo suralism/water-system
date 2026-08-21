@@ -713,6 +713,9 @@ body {
   line-height: 1.2;
 }
 
+.tab-label-short { display: none; }
+.tab-label-full  { display: inline; }
+
 .mode-tab-desc {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -2357,36 +2360,49 @@ body {
   .alert-banner svg { width: 18px; height: 18px; }
 
   /* Mode Switcher - Modern Segmented Control */
+  .tab-label-full { display: none; }
+  .tab-label-short { display: inline; }
+
   .mode-toggle-bar {
     grid-template-columns: 1fr 1fr;
     gap: 4px;
-    padding: 4px;
+    padding: 3px;
     border-radius: var(--r-full);
     width: 100%;
   }
 
   .mode-tab-btn {
-    padding: 7px 8px;
+    padding: 6px 8px;
     gap: 6px;
     border-radius: var(--r-full);
     justify-content: center;
+    min-width: 0;
+    overflow: hidden;
   }
   .mode-tab-icon {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
+    flex-shrink: 0;
   }
-  .mode-tab-icon svg { width: 14px; height: 14px; }
-  .mode-tab-text { flex: initial; }
+  .mode-tab-icon svg { width: 13px; height: 13px; }
+  .mode-tab-text {
+    flex: initial;
+    min-width: 0;
+  }
   .mode-tab-title {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     font-weight: 700;
     white-space: nowrap;
+    line-height: 1;
   }
   .mode-tab-desc  { display: none; }
   .mode-count-badge {
-    font-size: 0.66rem;
-    padding: 1px 6px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: var(--r-full);
+    flex-shrink: 0;
   }
 
   /* KPI Grid (Modern 2x2 Grid with Clean Visual Hierarchy) */

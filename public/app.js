@@ -220,8 +220,8 @@ function applyFilters() {
   });
 
   // อัปเดตตัวเลข Badge บนแถบเลือกโหมดหลัก
-  document.getElementById("badgeWaterCount").textContent = `${allWaterLevels.length} สถานี`;
-  document.getElementById("badgeRainCount").textContent = `${allRainfalls.length} สถานี`;
+  document.getElementById("badgeWaterCount").textContent = `${allWaterLevels.length}`;
+  document.getElementById("badgeRainCount").textContent = `${allRainfalls.length}`;
 
   updateKPIs();
   updateLeaderboards();
@@ -294,10 +294,11 @@ function updateKPIs() {
   const banner = document.getElementById("dangerAlertBanner");
   const bannerText = document.getElementById("dangerAlertText");
   if (waterOverflow > 0) {
-    bannerText.textContent = `🚨 มี ${waterOverflow} สถานีระดับน้ำล้นตลิ่ง ใน จ.อุบลราชธานี – โปรดติดตามสถานการณ์อย่างใกล้ชิด`;
+    bannerText.textContent = `มี ${waterOverflow} สถานีระดับน้ำล้นตลิ่ง ใน จ.อุบลราชธานี – โปรดติดตามสถานการณ์อย่างใกล้ชิด`;
     banner.classList.remove("hidden");
+    banner.classList.remove("warning");
   } else if (waterWarning > 0) {
-    bannerText.textContent = `⚠️ มี ${waterWarning} สถานีระดับน้ำใกล้ตลิ่ง ใน จ.อุบลราชธานี – ควรเฝ้าระวัง`;
+    bannerText.textContent = `มี ${waterWarning} สถานีระดับน้ำใกล้ตลิ่ง ใน จ.อุบลราชธานี – ควรเฝ้าระวัง`;
     banner.className = "alert-banner warning";
     banner.classList.remove("hidden");
   } else {
@@ -352,11 +353,11 @@ function updateLeaderboards() {
     
     let statusText = "";
     if (isOverflow) {
-      statusText = `🚨 ล้นตลิ่ง ${fbText}`;
+      statusText = `ล้นตลิ่ง ${fbText}`;
     } else if (item.freeboardM !== null && item.freeboardM <= 0.5) {
-      statusText = `⚠️ ต่ำกว่าตลิ่ง ${fbText}`;
+      statusText = `ต่ำกว่าตลิ่ง ${fbText}`;
     } else {
-      statusText = `⚠️ เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
+      statusText = `เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
     }
 
     const obsTime = item.observedAt
@@ -367,7 +368,7 @@ function updateLeaderboards() {
       <div class="sidebar-warning-box ${isOverflow ? 'danger' : 'warning'}">
         <div class="sw-header">
           <div>
-            <div class="sw-title">🌊 ${st.nameTh || "สถานี " + st.id}</div>
+            <div class="sw-title">${st.nameTh || "สถานี " + st.id}</div>
             <div class="sw-sub">อ.${st.amphoeNameTh || "-"} • ${st.basinNameTh || "-"}</div>
           </div>
           <span class="sw-pill ${isOverflow ? 'danger' : 'warning'}">${statusText}</span>
@@ -438,7 +439,7 @@ function updateLeaderboards() {
       return `
         <div class="leader-item" onclick="focusStationOnMap(${item.station.id})">
           <div class="leader-meta">
-            <span class="leader-name">🌊 ${item.station.nameTh || "สถานี " + item.station.id}</span>
+            <span class="leader-name">${item.station.nameTh || "สถานี " + item.station.id}</span>
             <span class="leader-location">อ.${item.station.amphoeNameTh || "-"} • ${item.station.basinNameTh || ""}</span>
           </div>
           <div class="leader-stat">
@@ -466,7 +467,7 @@ function updateLeaderboards() {
       return `
         <div class="leader-item" onclick="focusStationOnMap(${item.station.id})">
           <div class="leader-meta">
-            <span class="leader-name">🌧️ ${item.station.nameTh || "สถานี " + item.station.id}</span>
+            <span class="leader-name">${item.station.nameTh || "สถานี " + item.station.id}</span>
             <span class="leader-location">อ.${item.station.amphoeNameTh || "-"}</span>
           </div>
           <div class="leader-stat">
@@ -541,14 +542,14 @@ function renderMapMarkers() {
 
       if (item.freeboardM !== null && item.freeboardM < 0) {
         markerColor = "#ef4444"; // ล้นตลิ่ง (red)
-        statusText = `🚨 น้ำล้นตลิ่ง (${fbText})`;
+        statusText = `น้ำล้นตลิ่ง (${fbText})`;
         isDanger = true;
       } else if (
         (item.freeboardM !== null && item.freeboardM <= 0.5) ||
         (item.situationLevel !== null && item.situationLevel >= 4)
       ) {
         markerColor = "#f59e0b"; // เฝ้าระวัง (orange)
-        statusText = `⚠️ เฝ้าระวังน้ำสูง (พ้นตลิ่ง ${item.freeboardM !== null ? fbSigned : "N/A"})`;
+        statusText = `เฝ้าระวังน้ำสูง (พ้นตลิ่ง ${item.freeboardM !== null ? fbSigned : "N/A"})`;
       }
 
       const circleMarker = L.circleMarker([lat, lon], {
@@ -572,7 +573,7 @@ function renderMapMarkers() {
         <div class="map-popup-card">
           <div class="popup-header">
             <span class="popup-tag" style="${tagStyle}">${statusText}</span>
-            <h4>🌊 ${item.station.nameTh || "สถานี " + item.station.id}</h4>
+            <h4>${item.station.nameTh || "สถานี " + item.station.id}</h4>
             <p class="popup-loc">อ.${item.station.amphoeNameTh || ''} จ.อุบลราชธานี • ${item.station.basinNameTh || ''}</p>
           </div>
           <div class="popup-data-grid">
@@ -826,7 +827,7 @@ function renderWaterTablePage() {
       return `
         <tr>
           <td><span class="modal-station-id">${item.station.id}</span></td>
-          <td><strong>🌊 ${item.station.nameTh || "-"}</strong></td>
+          <td><strong>${item.station.nameTh || "-"}</strong></td>
           <td>อ.${item.station.amphoeNameTh || "-"}</td>
           <td>${item.station.basinNameTh || "-"}</td>
           <td><strong style="color:#06b6d4;">${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"}</strong></td>
@@ -877,7 +878,7 @@ function renderRainTablePage() {
       return `
         <tr>
           <td><span class="modal-station-id">${item.station.id}</span></td>
-          <td><strong>🌧️ ${item.station.nameTh || "-"}</strong></td>
+          <td><strong>${item.station.nameTh || "-"}</strong></td>
           <td>อ.${item.station.amphoeNameTh || "-"}</td>
           <td>${item.station.basinNameTh || "-"}</td>
           <td>${item.rain1h !== null ? item.rain1h.toFixed(1) : "-"}</td>
@@ -914,7 +915,7 @@ async function openWaterModal(stationId) {
   };
 
   document.getElementById("modalStationId").textContent = `ID: ${stationId}`;
-  document.getElementById("modalStationName").textContent = `🌊 ${st.nameTh || "สถานี " + stationId}`;
+  document.getElementById("modalStationName").textContent = st.nameTh || "สถานี " + stationId;
   document.getElementById("modalStationLocation").textContent = `${st.amphoeNameTh ? 'อ.' + st.amphoeNameTh : ''} จ.อุบลราชธานี (ลุ่มน้ำ: ${st.basinNameTh || '-'})`;
 
   document.getElementById("modalWaterLevelMsl").textContent = stationWater.waterlevelMsl !== null ? stationWater.waterlevelMsl.toFixed(2) : "-";
