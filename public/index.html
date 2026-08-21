@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UBONWATCH - ระบบเตือนภัยน้ำ | จ.อุบลราชธานี – ThaiWater (HII)</title>
+  <meta name="description" content="UBONWATCH ระบบติดตามระดับน้ำและปริมาณน้ำฝน จังหวัดอุบลราชธานี แบบ Real-time จาก ThaiWater API v3 สถาบันสารสนเทศทรัพยากรน้ำ (HII)">
+  <meta name="theme-color" content="#0369a1">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Leaflet MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-layout">
+
+    <!-- ========== HEADER ========== -->
+    <header class="navbar">
+      <div class="navbar-inner">
+        <!-- Brand -->
+        <div class="nav-brand">
+          <div class="brand-icon">
+            <i data-lucide="waves"></i>
+          </div>
+          <div class="brand-text">
+            <h1>UBONWATCH <span>- ระบบเตือนภัยน้ำ</span></h1>
+            <p class="subtitle">ข้อมูล Real-time • อัปเดตทุก 5 นาที</p>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="nav-actions">
+          <div class="system-status-badge">
+            <span class="status-dot pulsing"></span>
+            <span id="cacheStatusText">กำลังโหลด...</span>
+          </div>
+
+          <div class="refresh-control">
+            <span class="auto-refresh-timer" title="อัปเดตอัตโนมัติทุก 5 นาที">
+              <i data-lucide="clock" class="icon-sm"></i>
+              <span id="countdownTimer">05:00</span>
+            </span>
+            <button id="btnRefresh" class="btn-refresh" title="ดึงข้อมูลใหม่ทันที">
+              <i data-lucide="refresh-cw" class="icon-sm"></i>
+              รีเฟรช
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========== MAIN ========== -->
+    <main class="main-content">
+
+      <!-- แบนเนอร์แจ้งเตือน (แสดงเมื่อมีสถานีล้นตลิ่ง) -->
+      <div class="alert-banner hidden" id="dangerAlertBanner">
+        <i data-lucide="alert-triangle"></i>
+        <span id="dangerAlertText">มีสถานีน้ำล้นตลิ่ง</span>
+      </div>
+
+      <!-- ========== MODE SELECTOR ========== -->
+      <section class="mode-selector-section">
+        <div class="mode-toggle-bar">
+          <button id="modeBtnWater" class="mode-tab-btn active">
+            <div class="mode-tab-icon water-theme">
+              <i data-lucide="waves"></i>
+            </div>
+            <div class="mode-tab-text">
+              <span class="mode-tab-title">สถานีตรวจวัดระดับน้ำ</span>
+              <span class="mode-tab-desc">ติดตามระดับน้ำเทียบตลิ่ง ระยะพ้นตลิ่ง สถานการณ์น้ำล้น และกราฟย้อนหลัง</span>
+            </div>
+            <span class="mode-count-badge water" id="badgeWaterCount">0 สถานี</span>
+          </button>
+
+          <button id="modeBtnRain" class="mode-tab-btn">
+            <div class="mode-tab-icon rain-theme">
+              <i data-lucide="cloud-rain"></i>
+            </div>
+            <div class="mode-tab-text">
+              <span class="mode-tab-title">สถานีตรวจวัดปริมาณน้ำฝน</span>
+              <span class="mode-tab-desc">ติดตามฝนสะสม 24 ชม., ฝน 1 ชม. ล่าสุด และการกระจายตัวของฝน</span>
+            </div>
+            <span class="mode-count-badge rain" id="badgeRainCount">0 สถานี</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ========== WATER LEVEL KPI CARDS ========== -->
+      <section class="kpi-grid" id="waterKpiGrid">
+        <div class="kpi-card danger-card">
+          <div class="kpi-icon-wrap">
+            <i data-lucide="alert-octagon"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">🚨 น้ำล้นตลิ่ง (วิกฤต)</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="waterKpiOverflow">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend">ระยะพ้นตลิ่ง น้อยกว่า 0 เมตร</span>
+          </div>
+        </div>
+
+        <div class="kpi-card warning-card">
+          <div class="kpi-icon-wrap">
+            <i data-lucide="alert-triangle"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">⚠️ เฝ้าระวังน้ำสูง</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="waterKpiWarning">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend">ต่ำกว่าตลิ่ง ไม่เกิน 0.5 เมตร</span>
+          </div>
+        </div>
+
+        <div class="kpi-card info-card">
+          <div class="kpi-icon-wrap">
+            <i data-lucide="shield-check"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">✅ ระดับน้ำปกติ</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="waterKpiNormal">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend">ต่ำกว่าตลิ่ง มากกว่า 0.5 เมตร</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-wrap" style="background:#dbeafe; color:#0369a1;">
+            <i data-lucide="map-pin"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">สถานีวัดระดับน้ำทั้งหมด</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="waterKpiTotal">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend" id="waterKpiProvinceLabel">ใน จ.อุบลราชธานี</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== RAINFALL KPI CARDS ========== -->
+      <section class="kpi-grid hidden" id="rainKpiGrid">
+        <div class="kpi-card danger-card">
+          <div class="kpi-icon-wrap">
+            <i data-lucide="cloud-lightning"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">🚨 ฝนตกหนักมาก</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="rainKpiVeryHeavy">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend">ฝนสะสม 24 ชม. ≥ 90 มม.</span>
+          </div>
+        </div>
+
+        <div class="kpi-card warning-card">
+          <div class="kpi-icon-wrap">
+            <i data-lucide="cloud-rain"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">⚠️ ฝนตกหนัก</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="rainKpiHeavy">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend">ฝนสะสม 24 ชม. 35–90 มม.</span>
+          </div>
+        </div>
+
+        <div class="kpi-card rain-card">
+          <div class="kpi-icon-wrap">
+            <i data-lucide="droplets"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">🌧️ ฝนสูงสุด 24 ชม.</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="rainKpiMaxVal">0.0</span>
+              <span class="kpi-unit">มม.</span>
+            </div>
+            <span class="kpi-trend text-truncate" id="rainKpiMaxStation">-</span>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon-wrap" style="background:#dbeafe; color:#0369a1;">
+            <i data-lucide="map-pin"></i>
+          </div>
+          <div class="kpi-info">
+            <span class="kpi-label">สถานีวัดน้ำฝนทั้งหมด</span>
+            <div class="kpi-value-row">
+              <span class="kpi-number" id="rainKpiTotal">0</span>
+              <span class="kpi-unit">สถานี</span>
+            </div>
+            <span class="kpi-trend" id="rainKpiActiveCount">มีฝนตก – สถานี</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== CONTROLS BAR ========== -->
+      <section class="controls-bar">
+        <!-- Search -->
+        <div class="search-box">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="searchInput" placeholder="ค้นหาชื่อสถานี, อำเภอ, ลุ่มน้ำ...">
+          <button id="btnClearSearch" class="btn-clear hidden" title="ล้างการค้นหา">&times;</button>
+        </div>
+
+        <!-- Filter Group -->
+        <div class="filter-group">
+          <!-- Amphoe Dropdown -->
+          <div class="select-wrapper">
+            <select id="amphoeSelect">
+              <option value="">ทุกอำเภอใน จ.อุบลราชธานี</option>
+            </select>
+          </div>
+
+          <!-- Water Level Filter Pills -->
+          <div class="filter-pills" id="waterFilterPills">
+            <button class="pill active" data-filter="all">ทั้งหมด</button>
+            <button class="pill pill-danger" data-filter="overflow">
+              <span class="pill-dot red"></span> น้ำล้นตลิ่ง
+            </button>
+            <button class="pill pill-warning" data-filter="warning">
+              <span class="pill-dot yellow"></span> เฝ้าระวัง
+            </button>
+            <button class="pill" data-filter="normal">
+              <span class="pill-dot cyan"></span> ปกติ
+            </button>
+          </div>
+
+          <!-- Rainfall Filter Pills -->
+          <div class="filter-pills hidden" id="rainFilterPills">
+            <button class="pill active" data-filter="all">ทั้งหมด</button>
+            <button class="pill pill-danger" data-filter="very-heavy">
+              <span class="pill-dot red"></span> ฝนหนักมาก (≥90 มม.)
+            </button>
+            <button class="pill pill-warning" data-filter="heavy">
+              <span class="pill-dot yellow"></span> ฝนหนัก (35–90 มม.)
+            </button>
+            <button class="pill pill-rain" data-filter="has-rain">
+              <span class="pill-dot blue"></span> มีฝนตก
+            </button>
+          </div>
+        </div>
+
+        <!-- River Quick Chips -->
+        <div class="river-chips-bar" id="ubonRiverChips">
+          <span class="chips-label">
+            <i data-lucide="map" class="icon-xs"></i> ค้นหาเร็ว:
+          </span>
+          <button class="chip-btn" data-search="แม่น้ำมูล">แม่น้ำมูล</button>
+          <button class="chip-btn" data-search="แม่น้ำชี">แม่น้ำชี</button>
+          <button class="chip-btn" data-search="ลำเซบาย">ลำเซบาย</button>
+          <button class="chip-btn" data-search="ลำโดมใหญ่">ลำโดมใหญ่</button>
+          <button class="chip-btn" data-search="โขงเจียม">โขงเจียม</button>
+        </div>
+
+        <!-- View Toggle -->
+        <div class="view-toggles">
+          <button id="btnViewMap" class="view-toggle-btn active" title="มุมมองแผนที่">
+            <i data-lucide="map" class="icon-sm"></i> <span>แผนที่</span>
+          </button>
+          <button id="btnViewTable" class="view-toggle-btn" title="มุมมองตาราง">
+            <i data-lucide="table" class="icon-sm"></i> <span>ตาราง</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ========== MAP / TABLE VIEW ========== -->
+      <section class="content-body">
+
+        <!-- MAP VIEW -->
+        <div id="mapViewContainer" class="view-panel active">
+          <div class="map-layout">
+            <!-- Map -->
+            <div class="map-wrapper">
+              <div id="map"></div>
+
+              <!-- Legend Water -->
+              <div class="map-legend" id="waterMapLegend">
+                <h4>
+                  <i data-lucide="waves" class="icon-xs"></i>
+                  สัญลักษณ์สถานีระดับน้ำ
+                </h4>
+                <div class="legend-item"><span class="legend-pin red"></span> น้ำล้นตลิ่ง (ต่ำกว่า 0 ม.)</div>
+                <div class="legend-item"><span class="legend-pin orange"></span> เฝ้าระวัง (ต่ำกว่าตลิ่ง ≤ 0.5 ม.)</div>
+                <div class="legend-item"><span class="legend-pin cyan"></span> ระดับน้ำปกติ</div>
+              </div>
+
+              <!-- Legend Rain -->
+              <div class="map-legend hidden" id="rainMapLegend">
+                <h4>
+                  <i data-lucide="cloud-rain" class="icon-xs"></i>
+                  สัญลักษณ์สถานีวัดน้ำฝน (24 ชม.)
+                </h4>
+                <div class="legend-item"><span class="legend-pin red"></span> ฝนหนักมาก (≥ 90 มม.)</div>
+                <div class="legend-item"><span class="legend-pin orange"></span> ฝนหนัก (35–90 มม.)</div>
+                <div class="legend-item"><span class="legend-pin green"></span> ฝนปานกลาง (10–35 มม.)</div>
+                <div class="legend-item"><span class="legend-pin blue"></span> ฝนเล็กน้อย (0–10 มม.)</div>
+                <div class="legend-item"><span class="legend-pin gray"></span> ไม่มีฝน</div>
+              </div>
+            </div>
+
+            <!-- Sidebar Leaderboards -->
+            <aside class="sidebar-leaderboards">
+              <!-- Water Leaderboard -->
+              <div class="leaderboard-card" id="waterLeaderCard">
+                <div class="card-header danger-header">
+                  <div class="header-title">
+                    <i data-lucide="shield-alert" class="icon-sm"></i>
+                    <h3>สถานีเฝ้าระวัง & ล้นตลิ่ง</h3>
+                  </div>
+                  <span class="badge danger" id="waterSideBadge">0</span>
+                </div>
+                <div class="leaderboard-list" id="waterLeaderList">
+                  <div class="loading-placeholder">กำลังโหลด...</div>
+                </div>
+              </div>
+
+              <!-- Rain Leaderboard -->
+              <div class="leaderboard-card hidden" id="rainLeaderCard">
+                <div class="card-header rain-header">
+                  <div class="header-title">
+                    <i data-lucide="cloud-rain" class="icon-sm"></i>
+                    <h3>สถานีฝนสะสมสูงสุด 24 ชม.</h3>
+                  </div>
+                  <span class="badge rain" id="rainSideBadge">Top 10</span>
+                </div>
+                <div class="leaderboard-list" id="rainLeaderList">
+                  <div class="loading-placeholder">กำลังโหลด...</div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <!-- TABLE VIEW -->
+        <div id="tableViewContainer" class="view-panel">
+          <div class="table-card">
+            <div class="table-header-bar">
+              <div class="table-tabs">
+                <button class="table-tab active" id="tabWaterLevel">
+                  <i data-lucide="waves"></i>
+                  สถานีวัดระดับน้ำ (<span id="tableWaterCount">0</span>)
+                </button>
+                <button class="table-tab" id="tabRainfall">
+                  <i data-lucide="cloud-rain"></i>
+                  สถานีวัดน้ำฝน (<span id="tableRainCount">0</span>)
+                </button>
+              </div>
+              <div class="table-tools">
+                <span id="tableFilteredInfo">แสดงทั้งหมด</span>
+              </div>
+            </div>
+
+            <!-- Water Level Table -->
+            <div class="table-responsive" id="waterTableContainer">
+              <table class="data-table" id="waterTable">
+                <thead>
+                  <tr>
+                    <th>รหัส</th>
+                    <th>ชื่อสถานี / แม่น้ำ</th>
+                    <th>อำเภอ</th>
+                    <th>ลุ่มน้ำ</th>
+                    <th>ระดับน้ำ (ม.รทก.)</th>
+                    <th>ระดับตลิ่ง</th>
+                    <th>ระยะพ้นตลิ่ง (ม.)</th>
+                    <th>สถานะ</th>
+                    <th>เวลาวัด</th>
+                    <th>กราฟ</th>
+                  </tr>
+                </thead>
+                <tbody id="waterTableBody">
+                  <tr><td colspan="10" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Rainfall Table -->
+            <div class="table-responsive hidden" id="rainTableContainer">
+              <table class="data-table" id="rainTable">
+                <thead>
+                  <tr>
+                    <th>รหัส</th>
+                    <th>ชื่อสถานีวัดน้ำฝน</th>
+                    <th>อำเภอ</th>
+                    <th>ลุ่มน้ำ</th>
+                    <th>ฝน 1 ชม. (มม.)</th>
+                    <th>ฝนสะสม 24 ชม. (มม.)</th>
+                    <th>ระดับความแรง</th>
+                    <th>เวลาวัด</th>
+                  </tr>
+                </thead>
+                <tbody id="rainTableBody">
+                  <tr><td colspan="8" class="text-center py-4">กำลังโหลดข้อมูล...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-bar">
+              <span class="pagination-info" id="paginationInfo">หน้าที่ 1 / 1</span>
+              <div class="pagination-buttons">
+                <button id="btnPrevPage" class="btn-page" disabled>
+                  <i data-lucide="chevron-left"></i> ก่อนหน้า
+                </button>
+                <button id="btnNextPage" class="btn-page">
+                  ถัดไป <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========== FOOTER ========== -->
+    <footer class="site-footer">
+      <a href="https://www.hii.or.th" target="_blank" rel="noopener">สถาบันสารสนเทศทรัพยากรน้ำ</a> •
+      ThaiWater API v3 • พัฒนาเพื่อการเตือนภัยน้ำท่วม จ.อุบลราชธานี
+    </footer>
+  </div>
+
+  <!-- ========== MODAL: กราฟระดับน้ำ ========== -->
+  <div class="modal-backdrop" id="stationModalBackdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <div class="modal-badge-group">
+            <span class="modal-station-id" id="modalStationId">ID: -</span>
+            <span class="status-pill badge" id="modalStatusPill">-</span>
+          </div>
+          <h2 id="modalStationName">สถานีวัดระดับน้ำ</h2>
+          <p id="modalStationLocation" class="modal-subtitle">ตำบล อำเภอ จังหวัด</p>
+        </div>
+        <button class="btn-close-modal" id="btnCloseModal" title="ปิดหน้าต่าง">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Metrics -->
+        <div class="modal-metrics-grid">
+          <div class="metric-box">
+            <span class="metric-title">ระดับน้ำปัจจุบัน</span>
+            <span class="metric-num text-cyan" id="modalWaterLevelMsl">-</span>
+            <span class="metric-unit">ม.รทก.</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">ระดับตลิ่งต่ำสุด</span>
+            <span class="metric-num" id="modalMinBankMsl">-</span>
+            <span class="metric-unit">ม.รทก.</span>
+          </div>
+          <div class="metric-box" id="modalFreeboardBox">
+            <span class="metric-title">ระยะพ้นตลิ่ง</span>
+            <span class="metric-num" id="modalFreeboardM">-</span>
+            <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">ระดับน้ำท้องน้ำ</span>
+            <span class="metric-num" id="modalWaterLocalM">-</span>
+            <span class="metric-unit">ม.</span>
+          </div>
+        </div>
+
+        <!-- Graph -->
+        <div class="graph-section">
+          <div class="graph-header">
+            <div class="graph-title-wrap">
+              <i data-lucide="line-chart"></i>
+              <h3>กราฟระดับน้ำย้อนหลัง เทียบระดับตลิ่ง</h3>
+            </div>
+            <div class="graph-range-picker">
+              <button class="btn-range active" data-days="1">24 ชม.</button>
+              <button class="btn-range" data-days="2">48 ชม.</button>
+              <button class="btn-range" data-days="3">3 วัน</button>
+            </div>
+          </div>
+          <div class="chart-canvas-wrapper">
+            <canvas id="waterLevelChart"></canvas>
+            <div class="chart-loader hidden" id="chartLoader">
+              <div class="spinner"></div>
+              <span>กำลังดึงข้อมูลกราฟจาก ThaiWater...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

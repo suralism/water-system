@@ -1,0 +1,35 @@
+{
+  "name": "thaiwater-ingestion-service",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "ThaiWater API v3 Ingestion & Caching Service for Water Level and Rainfall Data",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/server.ts",
+    "start": "node dist/server.js",
+    "demo": "tsx src/demo.ts",
+    "test": "tsx src/test.ts"
+  },
+  "keywords": [
+    "thaiwater",
+    "waterlevel",
+    "rainfall",
+    "hii",
+    "ingestion"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
