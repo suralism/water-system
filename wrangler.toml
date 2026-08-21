@@ -6,7 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 # Static Assets Configuration (Frontend Dashboard)
 [assets]
 directory = "./public"
-binding = "ASSETS"
 
 # Cron Trigger: ทำงานทุก 5 นาทีเพื่ออัปเดตข้อมูลระดับน้ำและปริมาณน้ำฝน
 [triggers]

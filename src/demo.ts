@@ -17,28 +17,48 @@ async function main() {
   try {
     console.log("1. กำลังดึงข้อมูลระดับน้ำ (Water Level Snapshot)...");
     const waterLevels = await service.getWaterLevel();
-    console.log(`   ✅ โหลดข้อมูลสำเร็จ: พบสถานีระดับน้ำทั้งหมด ${waterLevels.length} สถานี`);
-    if (waterLevels.length > 0) {
-      console.log("   📌 ตัวอย่างสถานีแรก:");
-      console.log(JSON.stringify(waterLevels[0], null, 2));
-    }
+    console.log(`   ✅ โหลดข้อมูลสำเร็จ: พบสถานีระดับน้ำทั้งหมด ${waterLevels.length} สถานี:`);
+    waterLevels.forEach((w, i) => {
+      console.log(`   [${i + 1}] ID: ${w.station.id} | ${w.station.nameTh} | อ.${w.station.amphoeNameTh} | ลุ่มน้ำ: ${w.station.basinNameTh}`);
+    });
 
-    console.log("\n2. กำลังดึงข้อมูลปริมาณน้ำฝน (Rainfall Snapshot)...");
-    const rainfalls = await service.getRainfall();
-    console.log(`   ✅ โหลดข้อมูลสำเร็จ: พบสถานีน้ำฝนทั้งหมด ${rainfalls.length} สถานี`);
-    if (rainfalls.length > 0) {
-      console.log("   📌 ตัวอย่างสถานีแรก:");
-      console.log(JSON.stringify(rainfalls[0], null, 2));
-    }
+    console.log("\n=== Testing River Matchers ===");
+    const testRivers = [
+      {
+        id: "mun",
+        name: "แม่น้ำมูล (M.7)",
+        matcher: (w: any) => [3543, 2752, 11688911].includes(w.station.id) || (w.station.nameTh && (w.station.nameTh.includes("M.7") || w.station.nameTh.includes("เสรีประชาธิปไตย"))),
+      },
+      {
+        id: "chi",
+        name: "แม่น้ำชี (เขื่องใน)",
+        matcher: (w: any) => [269, 504940, 11688876].includes(w.station.id) || (w.station.basinNameTh && w.station.basinNameTh.includes("ชี")),
+      },
+      {
+        id: "sebai",
+        name: "ลำเซบาย / ลำเซบก",
+        matcher: (w: any) => [11688743, 504962, 11688888].includes(w.station.id) || (w.station.nameTh && (w.station.nameTh.includes("เซบาย") || w.station.nameTh.includes("เซบก") || w.station.nameTh.includes("ป่าก่อ"))),
+      },
+      {
+        id: "domyai",
+        name: "ลำโดมใหญ่",
+        matcher: (w: any) => [3533, 2707, 11688882].includes(w.station.id) || (w.station.nameTh && (w.station.nameTh.includes("โดมใหญ่") || w.station.nameTh.includes("นาเยีย") || w.station.nameTh.includes("คำสำราญ"))),
+      },
+      {
+        id: "khong",
+        name: "โขงเจียม / ปากมูล",
+        matcher: (w: any) => [740540, 3544].includes(w.station.id) || (w.station.amphoeNameTh && w.station.amphoeNameTh.includes("โขงเจียม")),
+      }
+    ];
 
-    // ทดสอบดึงตามจังหวัด (เช่น กทม. provinceCode: "10" หรือ เชียงใหม่ "50")
-    console.log("\n3. ทดสอบกรองสถานีตามจังหวัด (เชียงใหม่ - รหัส 50)...");
-    const cmStations = await service.getWaterLevelsByProvince("50");
-    console.log(`   ✅ สถานีระดับน้ำใน จ.เชียงใหม่: ${cmStations.length} สถานี`);
-    if (cmStations.length > 0) {
-      const s = cmStations[0];
-      console.log(`   -> [${s.station.id}] ${s.station.nameTh} (${s.station.amphoeNameTh}) | ระดับน้ำ: ${s.waterlevelMsl} ม.รทก. | ระยะพ้นตลิ่ง: ${s.freeboardM ?? "N/A"} ม.`);
-    }
+    testRivers.forEach(r => {
+      const match = waterLevels.find(r.matcher);
+      if (match) {
+        console.log(`✅ ${r.name} -> Match: [ID ${match.station.id}] ${match.station.nameTh} (${match.station.amphoeNameTh}) | ระดับน้ำ: ${match.waterlevelMsl} ม.รทก. | พ้นตลิ่ง: ${match.freeboardM}`);
+      } else {
+        console.error(`❌ ${r.name} -> NOT FOUND!`);
+      }
+    });
 
     // ทดสอบดึง Time-series Graph
     if (waterLevels.length > 0) {

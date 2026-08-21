@@ -79,9 +79,14 @@ export async function fetchWaterLevel(
     : null;
 
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (typeof navigator === "undefined" && userAgent) {
+      headers["User-Agent"] = userAgent;
+    }
+
     const res = await fetchImpl(API_WATER_LEVEL, {
       method: "GET",
-      headers: { "User-Agent": userAgent },
+      headers,
       signal: controller.signal,
     });
 
@@ -155,9 +160,14 @@ export async function fetchRainfall(
     : null;
 
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (typeof navigator === "undefined" && userAgent) {
+      headers["User-Agent"] = userAgent;
+    }
+
     const res = await fetchImpl(API_RAINFALL_24H, {
       method: "GET",
-      headers: { "User-Agent": userAgent },
+      headers,
       signal: controller.signal,
     });
 
@@ -231,9 +241,14 @@ export async function fetchWaterLevelGraph(
     : null;
 
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (typeof navigator === "undefined" && userAgent) {
+      headers["User-Agent"] = userAgent;
+    }
+
     const res = await fetchImpl(url, {
       method: "GET",
-      headers: { "User-Agent": userAgent },
+      headers,
       signal: controller.signal,
     });
 

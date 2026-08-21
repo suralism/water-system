@@ -53,6 +53,33 @@
             <span id="cacheStatusText">กำลังโหลด...</span>
           </div>
 
+          <!-- Interactive Tool Buttons -->
+          <div class="nav-tool-group">
+            <button id="btnFindNearest" class="nav-tool-btn" title="เช็คความเสี่ยงน้ำท่วมตามพิกัด GPS ของฉัน">
+              <i data-lucide="crosshair" class="icon-xs"></i>
+              <span class="btn-text-desktop">ใกล้ฉัน</span>
+            </button>
+
+            <button id="btnToggleRadarNav" class="nav-tool-btn" title="เปิด/ปิด เรดาร์ฝนสด Doppler">
+              <i data-lucide="radar" class="icon-xs"></i>
+              <span class="btn-text-desktop">เรดาร์ฝน</span>
+              <span class="live-dot"></span>
+            </button>
+
+            <button id="btnShareSnapshot" class="nav-tool-btn" title="สร้างการ์ดสรุปสถานการณ์เพื่อแชร์">
+              <i data-lucide="share-2" class="icon-xs"></i>
+              <span class="btn-text-desktop">แชร์การ์ด</span>
+            </button>
+
+            <button id="btnToggleSound" class="nav-tool-btn sound-btn" title="เปิด/ปิด เสียงเตือนภัย">
+              <i data-lucide="volume-2" class="icon-xs"></i>
+            </button>
+
+            <button id="btnToggleTheme" class="nav-tool-btn theme-btn" title="สลับโหมดมืด / สว่าง">
+              <i data-lucide="moon" class="icon-xs" id="themeIcon"></i>
+            </button>
+          </div>
+
           <div class="refresh-control">
             <span class="auto-refresh-timer" title="อัปเดตอัตโนมัติทุก 5 นาที">
               <i data-lucide="clock" class="icon-sm"></i>
@@ -75,6 +102,40 @@
         <i data-lucide="alert-triangle"></i>
         <span id="dangerAlertText">มีสถานีน้ำล้นตลิ่ง</span>
       </div>
+
+      <!-- กล่องผลลัพธ์พิกัดความเสี่ยงใกล้ฉัน (GPS Flood Risk Proximity Box) -->
+      <div class="gps-proximity-box hidden" id="gpsProximityBox">
+        <div class="gps-box-header">
+          <div class="gps-header-left">
+            <span class="gps-pulse-icon"><i data-lucide="map-pin"></i></span>
+            <div>
+              <h3 id="gpsTitleText">วิเคราะห์ความเสี่ยงพิกัดของคุณ</h3>
+              <p id="gpsSubText" class="gps-sub-desc">กำลังคำนวณระยะห่างจากสถานีวัดระดับน้ำและวัดฝนที่ใกล้ที่สุด...</p>
+            </div>
+          </div>
+          <button class="btn-close-gps" id="btnCloseGps" title="ปิด">&times;</button>
+        </div>
+        <div class="gps-results-grid" id="gpsResultsGrid">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- ========== MAIN RIVERS CORRIDOR (แถบ 5 แม่น้ำสายหลักเมืองอุบลฯ) ========== -->
+      <section class="river-corridor-section" id="riverCorridorSection">
+        <div class="river-corridor-header">
+          <div class="rc-title-wrap">
+            <span class="rc-live-tag">
+              <span class="rc-dot"></span> LIVE GAUGES
+            </span>
+            <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
+          </div>
+          <span class="rc-hint">คลิกที่แม่น้ำเพื่อโฟกัสบนแผนที่</span>
+        </div>
+        <div class="river-corridor-cards" id="riverCorridorCards">
+          <!-- Populated by JavaScript with real station data -->
+          <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับแม่น้ำหลัก...</div>
+        </div>
+      </section>
 
       <!-- ========== MODE SELECTOR (Segmented Tab Bar) ========== -->
       <section class="mode-selector-section">
@@ -331,6 +392,52 @@
             <div class="map-wrapper">
               <div id="map"></div>
 
+              <!-- Map Floating Toolbar (สลับเลเยอร์ / เรดาร์ / GPS) -->
+              <div class="map-floating-toolbar">
+                <div class="map-layer-selector" id="mapLayerSelector">
+                  <button class="map-layer-btn active" data-layer="voyager" title="แผนที่มาตรฐาน (Positron/Voyager)">
+                    <i data-lucide="map" class="icon-xs"></i> <span>มาตรฐาน</span>
+                  </button>
+                  <button class="map-layer-btn" data-layer="satellite" title="ภาพถ่ายดาวเทียม (Satellite Hybrid)">
+                    <i data-lucide="satellite" class="icon-xs"></i> <span>ดาวเทียม</span>
+                  </button>
+                  <button class="map-layer-btn" data-layer="dark" title="โหมดมืดแทคติคอล (Tactical Dark)">
+                    <i data-lucide="moon" class="icon-xs"></i> <span>โหมดมืด</span>
+                  </button>
+                  <button class="map-layer-btn" data-layer="topo" title="ภูมิประเทศ (Terrain/Topo)">
+                    <i data-lucide="mountain" class="icon-xs"></i> <span>ภูมิประเทศ</span>
+                  </button>
+                </div>
+
+                <div class="map-action-buttons">
+                  <button id="btnToggleRadar" class="map-control-action radar-toggle-btn" title="เปิด/ปิด เลเยอร์เรดาร์กลุ่มฝนสด RainViewer">
+                    <i data-lucide="radar" class="icon-xs"></i> <span>เรดาร์กลุ่มฝน</span>
+                    <span class="radar-badge">LIVE</span>
+                  </button>
+                  <button id="btnGpsMap" class="map-control-action" title="หาพิกัดตำแหน่งของฉัน">
+                    <i data-lucide="crosshair" class="icon-xs"></i>
+                  </button>
+                  <button id="btnResetMap" class="map-control-action" title="รีเซ็ตมุมมอง จ.อุบลราชธานี">
+                    <i data-lucide="maximize-2" class="icon-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- RainViewer Radar Player Bar (ปรากฏเมื่อเปิดเรดาร์) -->
+              <div class="radar-player-bar hidden" id="radarPlayerBar">
+                <button id="btnRadarPlay" class="radar-play-btn" title="เล่น/หยุด ภาพเคลื่อนไหวเรดาร์">
+                  <i data-lucide="play" class="icon-xs" id="radarPlayIcon"></i>
+                </button>
+                <div class="radar-time-info">
+                  <span class="radar-time-label">เรดาร์ตรวจวัด:</span>
+                  <span id="radarTimeDisplay" class="radar-time-val">กำลังโหลดภาพเรดาร์...</span>
+                </div>
+                <div class="radar-timeline-slider-wrap">
+                  <input type="range" id="radarSlider" min="0" max="0" value="0" step="1" class="radar-range-slider">
+                </div>
+                <button id="btnCloseRadar" class="radar-close-btn" title="ปิดเรดาร์">&times;</button>
+              </div>
+
               <!-- Legend Water -->
               <div class="map-legend" id="waterMapLegend">
                 <h4>
@@ -494,7 +601,20 @@
       </div>
 
       <div class="modal-body">
-        <!-- Metrics -->
+        <!-- Modal View Tabs -->
+        <div class="modal-tab-selector">
+          <button class="modal-tab-btn active" id="btnModalTabGraph">
+            <i data-lucide="line-chart" class="icon-xs"></i>
+            <span>กราฟระดับน้ำย้อนหลัง</span>
+          </button>
+          <button class="modal-tab-btn" id="btnModalTabCrossSection">
+            <i data-lucide="waves" class="icon-xs"></i>
+            <span>แบบจำลองหน้าตัดตลิ่ง 2D</span>
+            <span class="tab-badge-new">SIM</span>
+          </button>
+        </div>
+
+        <!-- Metrics Grid -->
         <div class="modal-metrics-grid">
           <div class="metric-box">
             <span class="metric-title">ระดับน้ำปัจจุบัน</span>
@@ -518,8 +638,8 @@
           </div>
         </div>
 
-        <!-- Graph -->
-        <div class="graph-section">
+        <!-- TAB 1: Graph Section -->
+        <div class="graph-section" id="modalGraphSection">
           <div class="graph-header">
             <div class="graph-title-wrap">
               <i data-lucide="line-chart"></i>
@@ -538,6 +658,73 @@
               <span>กำลังดึงข้อมูลกราฟจาก ThaiWater...</span>
             </div>
           </div>
+        </div>
+
+        <!-- TAB 2: 2D River Cross-Section Visualizer & Physics Simulation Section -->
+        <div class="cross-section-container hidden" id="modalCrossSectionContainer">
+          <div class="cross-section-header">
+            <div class="cs-header-info">
+              <span class="cs-tag"><i data-lucide="activity" class="icon-xs"></i> จำลองหน้าตัดลำน้ำ 2D Physics</span>
+              <div class="cs-capacity-badge" id="csCapacityBadge">
+                ความจุลำน้ำ: <strong id="csCapacityVal">85%</strong>
+              </div>
+            </div>
+            <div class="cs-legend-row">
+              <span class="cs-legend-item"><span class="cs-dot ground"></span> ดินตลิ่ง</span>
+              <span class="cs-legend-item"><span class="cs-dot water"></span> ผิวน้ำ</span>
+              <span class="cs-legend-item"><span class="cs-dot bank"></span> ขอบตลิ่ง</span>
+            </div>
+          </div>
+
+          <!-- Cross-Section Canvas -->
+          <div class="cs-canvas-wrapper">
+            <canvas id="crossSectionCanvas" width="700" height="280"></canvas>
+          </div>
+
+          <!-- Interactive Simulator Controls (ลองปรับระดับน้ำจำลอง) -->
+          <div class="cs-simulator-controls">
+            <div class="sim-control-header">
+              <div class="sim-title">
+                <i data-lucide="sliders" class="icon-xs"></i>
+                <span>ทดลองจำลองระดับน้ำเพิ่ม/ลด (Water Level Simulator):</span>
+              </div>
+              <span class="sim-offset-badge" id="simOffsetBadge">+0.00 ม. (ค่าจริง)</span>
+              <button id="btnResetSim" class="btn-reset-sim">รีเซ็ตค่าจริง</button>
+            </div>
+            <div class="sim-slider-row">
+              <span class="sim-min">-2.0ม.</span>
+              <input type="range" id="simWaterSlider" min="-2.0" max="2.5" step="0.05" value="0" class="sim-range-input">
+              <span class="sim-max">+2.5ม.</span>
+            </div>
+            <p class="sim-note">* แถบเลื่อนนี้เป็นเพียงแบบจำลองเพื่อให้เห็นภาพว่า หากน้ำเพิ่มขึ้นจะส่งผลต่อขอบตลิ่งอย่างไร</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MODAL: สรุปภาพสถานการณ์แชร์โซเชียล (Snapshot Card Modal) ========== -->
+  <div class="modal-backdrop" id="snapshotModalBackdrop">
+    <div class="modal-card snapshot-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <h2>📸 บันทึกภาพสรุปสถานการณ์น้ำ จ.อุบลราชธานี</h2>
+          <p class="modal-subtitle">สร้างการ์ด Infographic สรุปภาพรวมพร้อมแชร์ลง LINE / Facebook ได้ทันที</p>
+        </div>
+        <button class="btn-close-modal" id="btnCloseSnapshotModal" title="ปิดหน้าต่าง">&times;</button>
+      </div>
+
+      <div class="modal-body snapshot-modal-body">
+        <div class="snapshot-canvas-container">
+          <canvas id="snapshotCanvas" width="900" height="540"></canvas>
+        </div>
+        <div class="snapshot-actions">
+          <button id="btnDownloadSnapshot" class="btn-snapshot-action primary">
+            <i data-lucide="download"></i> ดาวน์โหลดรูปภาพ (PNG)
+          </button>
+          <button id="btnCopySnapshot" class="btn-snapshot-action secondary">
+            <i data-lucide="copy"></i> คัดลอกรูปภาพลงคลิปบอร์ด
+          </button>
         </div>
       </div>
     </div>

@@ -13,6 +13,12 @@ const app = new Hono();
 // เปิดใช้งาน CORS สำหรับทุก request
 app.use("/*", cors());
 
+// ดักจับ Error รวมในระดับแอปพลิเคชัน
+app.onError((err, c) => {
+  console.error("[Worker Error]:", err);
+  return c.json({ success: false, message: err.message || "Internal Server Error" }, 500);
+});
+
 /**
  * 1. API: สรุปภาพรวมและสถิติสำคัญ จ.อุบลราชธานี (KPIs / Summary)
  */
