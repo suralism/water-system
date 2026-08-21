@@ -493,6 +493,14 @@ function focusStationOnMap(stationId) {
 
   map.flyTo([st.station.lat, st.station.lon], 13, { duration: 0.8 });
 
+  // บนมือถือ เมื่อกดเลือกสถานี ให้เลื่อนหน้าจอลงมาที่แผนที่อัตโนมัติ
+  if (window.innerWidth <= 767) {
+    const mapWrapper = document.querySelector(".map-wrapper");
+    if (mapWrapper) {
+      mapWrapper.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
   // หาและเปิด popup ของ marker
   setTimeout(() => {
     markerClusterGroup.eachLayer((layer) => {
