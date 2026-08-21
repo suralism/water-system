@@ -106,6 +106,10 @@ function initMap() {
   });
 
   map.addLayer(markerClusterGroup);
+
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+  }, 250);
 }
 
 /**
@@ -401,16 +405,14 @@ function updateLeaderboards() {
 
   let html = "";
 
-  // 1. สถานีล้นตลิ่ง
-  if (overflowList.length > 0) {
-    html += `<div class="sidebar-section-title" style="color:#991b1b; background:#fef2f2; border-left: 3.5px solid #ef4444;"><span>🚨 สถานีน้ำล้นตลิ่ง</span><span class="sw-pill danger">${overflowList.length}</span></div>`;
-    html += overflowList.map((item) => renderSidebarCard(item, "overflow")).join("");
-  }
-
-  // 2. สถานีเฝ้าระวัง
-  if (warningList.length > 0) {
-    html += `<div class="sidebar-section-title" style="color:#92400e; background:#fffbeb; border-left: 3.5px solid #f59e0b;"><span>⚠️ สถานีเฝ้าระวัง / เตือนภัย HII</span><span class="sw-pill warning">${warningList.length}</span></div>`;
-    html += warningList.map((item) => renderSidebarCard(item, "warning")).join("");
+  // 1. รายการสถานีวิกฤต & เฝ้าระวัง (แสดงเป็นการ์ดลอยสะอาดตา ไม่ต้องมีแถบคั่นซ้อน)
+  if (overflowList.length > 0 || warningList.length > 0) {
+    if (overflowList.length > 0) {
+      html += overflowList.map((item) => renderSidebarCard(item, "overflow")).join("");
+    }
+    if (warningList.length > 0) {
+      html += warningList.map((item) => renderSidebarCard(item, "warning")).join("");
+    }
   }
 
   // หากไม่มีสถานีวิกฤตเลย
@@ -423,9 +425,14 @@ function updateLeaderboards() {
     `;
   }
 
-  // 3. สถานีอื่นๆ เรียงตามระยะใกล้ตลิ่ง
+  // 2. สถานีอื่นๆ เรียงตามระยะใกล้ตลิ่ง (แสดงเป็นแถวเรียบหรู)
   if (normalList.length > 0) {
-    html += `<div class="sidebar-section-title" style="color:#475569; background:#f8fafc; border-left: 3.5px solid #94a3b8;"><span>สถานีอื่นๆ (เรียงตามระยะใกล้ตลิ่ง)</span><span style="font-size:0.72rem; color:#64748b; font-weight:700;">${normalList.length}</span></div>`;
+    html += `
+      <div class="sidebar-section-divider">
+        <span>สถานีระดับน้ำปกติ</span>
+        <span class="normal-count-badge">${normalList.length} สถานี</span>
+      </div>
+    `;
     html += normalList.map((item) => {
       const freeboardStr = formatFreeboard(item.freeboardM, { withSign: true });
       return `
@@ -435,7 +442,7 @@ function updateLeaderboards() {
             <span class="leader-location">อ.${item.station.amphoeNameTh || "-"} • ${item.station.basinNameTh || ""}</span>
           </div>
           <div class="leader-stat">
-            <span class="leader-val" style="color:#0369a1;">${freeboardStr}</span>
+            <span class="leader-val">${freeboardStr}</span>
             <span class="leader-sub">ต่ำกว่าตลิ่ง</span>
           </div>
         </div>
