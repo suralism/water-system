@@ -62,7 +62,7 @@ let remainingSeconds = REFRESH_INTERVAL_SEC;
 let countdownTimerInterval = null;
 
 /**
- * แปลงระยะพ้นตลิ่ง:
+ * แปลงระดับเทียบตลิ่ง (ต่ำกว่าตลิ่ง / ล้นตลิ่ง):
  * - ถ้าค่าสัมบูรณ์ < 1.0 เมตร (ไม่ถึง 1 เมตร) -> แสดงเป็น เซนติเมตร (ซม.) เช่น 6 ซม., -6 ซม.
  * - ถ้าค่าสัมบูรณ์ >= 1.0 เมตร -> แสดงเป็น เมตร (ม.) เช่น 4.89 ม., +4.89 ม., -1.20 ม.
  */
@@ -110,7 +110,7 @@ function initMap() {
     zoomControl: false,
   });
 
-  L.control.zoom({ position: "topright" }).addTo(map);
+  L.control.zoom({ position: "bottomright" }).addTo(map);
 
   // เลเยอร์แผนที่ต่างๆ
   baseTileLayers = {
@@ -496,7 +496,7 @@ function updateRiverCorridors() {
       statusLabel = "เฝ้าระวัง";
     }
 
-    const fbText = formatFreeboard(station.freeboardM, { withSign: true });
+    const fbText = formatFreeboard(station.freeboardM, { absOnly: true });
     
     // คำนวณร้อยละความจุลำน้ำ
     let capacityPct = 70;
@@ -526,7 +526,7 @@ function updateRiverCorridors() {
             <span class="rc-water-unit">ม.รทก.</span>
           </div>
           <div class="rc-freeboard-text ${statusClass}">
-            ${isOverflow ? 'ล้น ' : 'ต่ำกว่าตลิ่ง '}${fbText}
+            ${isOverflow ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}
           </div>
         </div>
 
@@ -616,8 +616,8 @@ function updateLeaderboards() {
             <span class="sw-m-val">${item.minBankMsl !== null ? item.minBankMsl.toFixed(2) : "-"}</span>
           </div>
           <div class="sw-metric-item">
-            <span class="sw-m-label">ระยะพ้นตลิ่ง</span>
-            <span class="sw-m-val ${isOverflow ? 'danger' : 'warning'}">${fbObj.num} ${fbObj.unit}</span>
+            <span class="sw-m-label">ระดับเทียบตลิ่ง</span>
+            <span class="sw-m-val ${isOverflow ? 'danger' : 'warning'}">${isOverflow ? 'ล้น ' : 'ต่ำกว่า '}${fbObj.num} ${fbObj.unit}</span>
           </div>
         </div>
 
@@ -729,7 +729,6 @@ function renderMapMarkers() {
       let isDanger = false;
 
       const fbText = formatFreeboard(item.freeboardM, { absOnly: true });
-      const fbSigned = formatFreeboard(item.freeboardM, { withSign: true });
 
       if (item.freeboardM !== null && item.freeboardM < 0) {
         markerColor = "#ef4444"; // ล้นตลิ่ง (red)
@@ -740,7 +739,7 @@ function renderMapMarkers() {
         (item.situationLevel !== null && item.situationLevel >= 4)
       ) {
         markerColor = "#f59e0b"; // เฝ้าระวัง (orange)
-        statusText = `เฝ้าระวังน้ำสูง (พ้นตลิ่ง ${item.freeboardM !== null ? fbSigned : "N/A"})`;
+        statusText = `เฝ้าระวังน้ำสูง (ต่ำกว่าตลิ่ง ${item.freeboardM !== null ? fbText : "N/A"})`;
       }
 
       const circleMarker = L.circleMarker([lat, lon], {
@@ -777,8 +776,10 @@ function renderMapMarkers() {
               <span class="pdv">${item.minBankMsl !== null ? item.minBankMsl.toFixed(2) : "-"}</span>
             </div>
             <div class="popup-data-item">
-              <span class="pdl">ระยะพ้นตลิ่ง</span>
-              <span class="pdv" style="color:${item.freeboardM !== null && item.freeboardM < 0 ? '#dc2626' : '#16a34a'}; font-weight:700;">${fbSigned}</span>
+              <span class="pdl">ระดับเทียบตลิ่ง</span>
+              <span class="pdv" style="color:${item.freeboardM !== null && item.freeboardM < 0 ? '#dc2626' : '#16a34a'}; font-weight:700;">
+                ${item.freeboardM !== null ? (item.freeboardM < 0 ? 'ล้นตลิ่ง ' + fbText : 'ต่ำกว่าตลิ่ง ' + fbText) : '-'}
+              </span>
             </div>
             <div class="popup-data-item">
               <span class="pdl">เวลาวัด</span>
@@ -937,15 +938,24 @@ function updateRadarDisplay() {
   const slider = document.getElementById("radarSlider");
   if (slider) slider.value = radarCurrentIndex;
 
-  const radarUrl = `${radarHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
-  if (radarLayer) {
-    map.removeLayer(radarLayer);
+  const radarUrl = `${radarHost}${frame.path}/512/{z}/{x}/{y}/2/1_1.png`;
+  
+  if (radarLayer && map.hasLayer(radarLayer)) {
+    radarLayer.setUrl(radarUrl);
+  } else {
+    if (radarLayer) {
+      map.removeLayer(radarLayer);
+    }
+    radarLayer = L.tileLayer(radarUrl, {
+      opacity: 0.72,
+      zIndex: 400,
+      tileSize: 512,
+      zoomOffset: -1,
+      minNativeZoom: 0,
+      maxNativeZoom: 7, // RainViewer Free API ให้ข้อมูลเรดาร์ที่ Zoom 0-7 เท่านั้น (เกิน 7 จะขึ้น Zoom Level Not Supported)
+      maxZoom: 19,       // ให้ Leaflet ขยายภาพต่ออัตโนมัติที่ Zoom 8-19 อย่างคมชัด
+    }).addTo(map);
   }
-  radarLayer = L.tileLayer(radarUrl, {
-    opacity: 0.65,
-    zIndex: 400,
-    maxZoom: 18,
-  }).addTo(map);
 }
 
 function toggleRadar(forceState) {
@@ -1097,7 +1107,7 @@ function processUserLocation(uLat, uLon) {
 
   if (closestWater) {
     const isOver = closestWater.freeboardM !== null && closestWater.freeboardM < 0;
-    const fbText = formatFreeboard(closestWater.freeboardM, { withSign: true });
+    const fbText = formatFreeboard(closestWater.freeboardM, { absOnly: true });
     html += `
       <div class="gps-item-card" onclick="focusStationOnMap(${closestWater.station.id})">
         <div class="gps-item-top">
@@ -1112,7 +1122,7 @@ function processUserLocation(uLat, uLon) {
             <small style="color:var(--text-muted);">ม.รทก.</small>
           </div>
           <span class="gps-status-pill ${isOver ? 'danger' : closestWater.freeboardM <= 0.5 ? 'warning' : 'safe'}">
-            ${isOver ? 'ล้นตลิ่ง ' : 'พ้นตลิ่ง '}${fbText}
+            ${isOver ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}
           </span>
         </div>
       </div>
@@ -1538,7 +1548,7 @@ function generateSnapshotCard() {
     ctx.fillText(`${idx + 1}. ${st.station.nameTh || "สถานี " + st.station.id} (อ.${st.station.amphoeNameTh || "-"})`, 60, rowY + 5);
 
     const isOver = st.freeboardM !== null && st.freeboardM < 0;
-    const fbText = formatFreeboard(st.freeboardM, { withSign: true });
+    const fbText = formatFreeboard(st.freeboardM, { absOnly: true });
 
     ctx.fillStyle = "#38bdf8";
     ctx.font = "14px 'Sarabun', sans-serif";
@@ -1546,7 +1556,7 @@ function generateSnapshotCard() {
 
     ctx.fillStyle = isOver ? "#ef4444" : "#10b981";
     ctx.font = "bold 14px 'Sarabun', sans-serif";
-    ctx.fillText(`${isOver ? 'ล้น ' : 'พ้นตลิ่ง '}${fbText}`, width - 180, rowY + 5);
+    ctx.fillText(`${isOver ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}`, width - 180, rowY + 5);
   });
 
   // Footer Link & Watermark

@@ -120,23 +120,6 @@
         </div>
       </div>
 
-      <!-- ========== MAIN RIVERS CORRIDOR (แถบ 5 แม่น้ำสายหลักเมืองอุบลฯ) ========== -->
-      <section class="river-corridor-section" id="riverCorridorSection">
-        <div class="river-corridor-header">
-          <div class="rc-title-wrap">
-            <span class="rc-live-tag">
-              <span class="rc-dot"></span> LIVE GAUGES
-            </span>
-            <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
-          </div>
-          <span class="rc-hint">คลิกที่แม่น้ำเพื่อโฟกัสบนแผนที่</span>
-        </div>
-        <div class="river-corridor-cards" id="riverCorridorCards">
-          <!-- Populated by JavaScript with real station data -->
-          <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับแม่น้ำหลัก...</div>
-        </div>
-      </section>
-
       <!-- ========== MODE SELECTOR (Segmented Tab Bar) ========== -->
       <section class="mode-selector-section">
         <div class="mode-toggle-bar">
@@ -149,7 +132,7 @@
                 <span class="tab-label-full">สถานีตรวจวัดระดับน้ำ</span>
                 <span class="tab-label-short">ระดับน้ำ</span>
               </span>
-              <span class="mode-tab-desc">ติดตามระดับน้ำเทียบตลิ่ง ระยะพ้นตลิ่ง และกราฟย้อนหลัง</span>
+              <span class="mode-tab-desc">ติดตามระดับน้ำเทียบตลิ่ง ระดับต่ำกว่า/ล้นตลิ่ง และกราฟย้อนหลัง</span>
             </div>
             <span class="mode-count-badge water" id="badgeWaterCount">0</span>
           </button>
@@ -185,7 +168,7 @@
               <span class="kpi-number" id="waterKpiOverflow">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ระยะพ้นตลิ่ง น้อยกว่า 0 ม.</span>
+            <span class="kpi-trend">ระดับน้ำสูงกว่าขอบตลิ่ง</span>
           </div>
         </div>
 
@@ -528,7 +511,7 @@
                     <th>ลุ่มน้ำ</th>
                     <th>ระดับน้ำ (ม.รทก.)</th>
                     <th>ระดับตลิ่ง</th>
-                    <th>ระยะพ้นตลิ่ง (ม.)</th>
+                    <th>ระดับเทียบตลิ่ง</th>
                     <th>สถานะ</th>
                     <th>เวลาวัด</th>
                     <th>กราฟ</th>
@@ -574,6 +557,23 @@
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ========== MAIN RIVERS CORRIDOR (แถบ 5 แม่น้ำสายหลักเมืองอุบลฯ) ========== -->
+      <section class="river-corridor-section" id="riverCorridorSection">
+        <div class="river-corridor-header">
+          <div class="rc-title-wrap">
+            <span class="rc-live-tag">
+              <span class="rc-dot"></span> LIVE GAUGES
+            </span>
+            <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
+          </div>
+          <span class="rc-hint">คลิกที่แม่น้ำเพื่อโฟกัสบนแผนที่</span>
+        </div>
+        <div class="river-corridor-cards" id="riverCorridorCards">
+          <!-- Populated by JavaScript with real station data -->
+          <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับแม่น้ำหลัก...</div>
         </div>
       </section>
     </main>
@@ -627,7 +627,7 @@
             <span class="metric-unit">ม.รทก.</span>
           </div>
           <div class="metric-box" id="modalFreeboardBox">
-            <span class="metric-title">ระยะพ้นตลิ่ง</span>
+            <span class="metric-title">ระดับเทียบตลิ่ง</span>
             <span class="metric-num" id="modalFreeboardM">-</span>
             <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
           </div>

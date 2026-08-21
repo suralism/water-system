@@ -3610,3 +3610,46 @@ body {
   border-color: var(--brand-primary);
 }
 
+/* Leaflet Zoom Control Styling */
+.leaflet-control-zoom {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+  overflow: hidden;
+  margin-bottom: 24px !important;
+  margin-right: 14px !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(8px);
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-default) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 16px !important;
+  transition: all var(--t-fast);
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: var(--brand-primary-bg) !important;
+  color: var(--brand-primary) !important;
+}
+
+[data-theme="dark"] .leaflet-control-zoom {
+  border-color: #334155 !important;
+}
+
+[data-theme="dark"] .leaflet-control-zoom a {
+  background-color: rgba(15, 23, 42, 0.92) !important;
+  color: #f8fafc !important;
+  border-bottom-color: #334155 !important;
+}
+
+[data-theme="dark"] .leaflet-control-zoom a:hover {
+  background-color: rgba(30, 41, 59, 0.95) !important;
+  color: #38bdf8 !important;
+}
+
+
