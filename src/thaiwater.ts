@@ -35,9 +35,10 @@ export function toIso(dateStr: unknown): string | null {
 function parseStationRef(item: any): StationRef | null {
   const stationObj = item.station ?? {};
   const geocodeObj = item.geocode ?? {};
+  const agencyObj = item.agency ?? stationObj.agency ?? {};
 
-  const lat = Number(stationObj.tele_station_lat);
-  const lon = Number(stationObj.tele_station_long);
+  const lat = Number(stationObj.tele_station_lat ?? item.tele_station_lat);
+  const lon = Number(stationObj.tele_station_long ?? item.tele_station_long);
 
   // กรองสถานี: พิกัดต้องเป็นตัวเลขที่ถูกต้อง และไม่ตกที่ (0, 0)
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) {
@@ -49,6 +50,7 @@ function parseStationRef(item: any): StationRef | null {
 
   return {
     id: Number(stationObj.id ?? item.id),
+    oldcode: stationObj.tele_station_oldcode ?? item.tele_station_oldcode ?? null,
     nameTh: stationObj.tele_station_name?.th ?? item.station_name?.th ?? null,
     nameEn: stationObj.tele_station_name?.en ?? item.station_name?.en ?? null,
     lat,
@@ -58,10 +60,161 @@ function parseStationRef(item: any): StationRef | null {
     amphoeNameTh: geocodeObj.amphoe_name?.th ?? null,
     tumbonNameTh: geocodeObj.tumbon_name?.th ?? null,
     basinNameTh: item.basin?.basin_name?.th ?? null,
+    agencyNameTh: agencyObj.agency_shortname?.th ?? agencyObj.agency_name?.th ?? null,
   };
 }
 
 export const UBON_PROVINCE_CODE = "34";
+
+/**
+ * คำนวณระยะห่างระหว่างพิกัด GPS 2 จุด (หน่วยเป็นเมตร)
+ */
+export function getGpsDistanceM(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dLat = (lat1 - lat2) * 111000;
+  const dLon = (lon1 - lon2) * 111000 * Math.cos((lat1 * Math.PI) / 180);
+  return Math.hypot(dLat, dLon);
+}
+
+/**
+ * ปรับปรุงและตัดอักขระพิเศษของชื่อสถานีเพื่อเปรียบเทียบความซ้ำซ้อน
+ */
+export function normalizeStationName(name: string | null | undefined): string {
+  if (!name) return "";
+  return name.replace(/\s+/g, "").replace(/[\(\)（）\-\_\.\[\]]/g, "").toLowerCase();
+}
+
+/**
+ * ให้คะแนน Record เพื่อเลือก Record ที่สมบูรณ์และสดใหม่ที่สุดเมื่อพบสถานีซ้ำซ้อน
+ */
+function scoreWaterLevelRecord(item: WaterLevelRecord): number {
+  let score = 0;
+  // 1. ความสดใหม่ของข้อมูลเวลา (เวลาใหม่กว่าได้คะแนนสูงกว่า)
+  const timeMs = item.observedAt ? Date.parse(item.observedAt) : 0;
+  if (Number.isFinite(timeMs)) {
+    score += timeMs;
+  }
+  // 2. มีค่าระดับตลิ่ง (minBankMsl) ที่ถูกต้อง (> 0)
+  if (item.minBankMsl !== null && item.minBankMsl > 0) {
+    score += 1e11;
+  }
+  // 3. มีค่าระดับน้ำปัจจุบัน (waterlevelMsl)
+  if (item.waterlevelMsl !== null) {
+    score += 1e10;
+  }
+  // 4. ให้ความสำคัญกับ ID หลักของสถานีโทรมาตรเดิม (ID < 10,000,000) มากกว่า feed ย้ายระบบ (11688xxx)
+  if (item.station.id < 10000000) {
+    score += 1e9;
+  }
+  return score;
+}
+
+function scoreRainfallRecord(item: RainfallRecord): number {
+  let score = 0;
+  const timeMs = item.observedAt ? Date.parse(item.observedAt) : 0;
+  if (Number.isFinite(timeMs)) {
+    score += timeMs;
+  }
+  if (item.rain24h !== null) {
+    score += 1e10;
+  }
+  if (item.station.id < 10000000) {
+    score += 1e9;
+  }
+  return score;
+}
+
+/**
+ * ตัดความซ้ำซ้อนของสถานีระดับน้ำ (Water Level Data Deduplication)
+ * - กำจัดสถานีที่ส่ง feed ซ้ำ (เช่น รหัส M.7 กับ ridhydro_M.7 หรือ ID ซ้ำ)
+ * - เลือกรักษาข้อมูลสถานีที่สมบูรณ์และเป็นปัจจุบันที่สุด (Latest + Valid minBankMsl)
+ */
+export function deduplicateWaterLevelRecords(records: WaterLevelRecord[]): WaterLevelRecord[] {
+  const result: WaterLevelRecord[] = [];
+  const visited = new Set<number>();
+
+  for (let i = 0; i < records.length; i++) {
+    if (visited.has(i)) continue;
+    const cluster: WaterLevelRecord[] = [records[i]];
+    visited.add(i);
+
+    const a = records[i];
+    const nameA = normalizeStationName(a.station.nameTh);
+    const codeA = (a.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
+
+    for (let j = i + 1; j < records.length; j++) {
+      if (visited.has(j)) continue;
+      const b = records[j];
+
+      const isSameId = a.station.id === b.station.id;
+      const distM = getGpsDistanceM(a.station.lat, a.station.lon, b.station.lat, b.station.lon);
+
+      const nameB = normalizeStationName(b.station.nameTh);
+      const codeB = (b.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
+
+      const isSameName = Boolean(
+        nameA && nameB && (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA))
+      );
+      const isSameCode = Boolean(codeA && codeB && codeA === codeB);
+
+      // กรองว่าเป็นสถานีเดียวกันหาก:
+      // 1. ID เดียวกัน
+      // 2. ระยะห่าง < 100 เมตร และ (ชื่อตรงกัน หรือ รหัสโทรมาตรตรงกัน หรือ ระยะห่าง < 1.0 เมตร)
+      if (isSameId || (distM < 100 && (isSameName || isSameCode || distM < 1.0))) {
+        cluster.push(b);
+        visited.add(j);
+      }
+    }
+
+    cluster.sort((x, y) => scoreWaterLevelRecord(y) - scoreWaterLevelRecord(x));
+    result.push(cluster[0]);
+  }
+
+  return result;
+}
+
+/**
+ * ตัดความซ้ำซ้อนของสถานีวัดปริมาณน้ำฝน (Rainfall Data Deduplication)
+ */
+export function deduplicateRainfallRecords(records: RainfallRecord[]): RainfallRecord[] {
+  const result: RainfallRecord[] = [];
+  const visited = new Set<number>();
+
+  for (let i = 0; i < records.length; i++) {
+    if (visited.has(i)) continue;
+    const cluster: RainfallRecord[] = [records[i]];
+    visited.add(i);
+
+    const a = records[i];
+    const nameA = normalizeStationName(a.station.nameTh);
+    const codeA = (a.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
+
+    for (let j = i + 1; j < records.length; j++) {
+      if (visited.has(j)) continue;
+      const b = records[j];
+
+      const isSameId = a.station.id === b.station.id;
+      const distM = getGpsDistanceM(a.station.lat, a.station.lon, b.station.lat, b.station.lon);
+
+      const nameB = normalizeStationName(b.station.nameTh);
+      const codeB = (b.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
+
+      const isSameName = Boolean(
+        nameA && nameB && (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA))
+      );
+      const isSameCode = Boolean(codeA && codeB && codeA === codeB);
+
+      if (isSameId || (distM < 100 && (isSameName || isSameCode || distM < 1.0))) {
+        cluster.push(b);
+        visited.add(j);
+      }
+    }
+
+    cluster.sort((x, y) => scoreRainfallRecord(y) - scoreRainfallRecord(x));
+    result.push(cluster[0]);
+  }
+
+  return result;
+}
 
 /**
  * 1. ดึงข้อมูลระดับน้ำ (Water Level Snapshot) - กรองเฉพาะ จ.อุบลราชธานี (34) ทันทีเพื่อความเร็วสูงสุด
@@ -72,6 +225,7 @@ export async function fetchWaterLevel(
   const fetchImpl = options.fetchFn ?? fetch;
   const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
   const targetProvince = options.targetProvinceCode !== undefined ? options.targetProvinceCode : UBON_PROVINCE_CODE;
+  const shouldDeduplicate = options.deduplicate ?? true;
 
   const controller = new AbortController();
   const timeoutId = options.timeoutMs
@@ -138,7 +292,7 @@ export async function fetchWaterLevel(
       });
     }
 
-    return results;
+    return shouldDeduplicate ? deduplicateWaterLevelRecords(results) : results;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
@@ -153,6 +307,7 @@ export async function fetchRainfall(
   const fetchImpl = options.fetchFn ?? fetch;
   const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
   const targetProvince = options.targetProvinceCode !== undefined ? options.targetProvinceCode : UBON_PROVINCE_CODE;
+  const shouldDeduplicate = options.deduplicate ?? true;
 
   const controller = new AbortController();
   const timeoutId = options.timeoutMs
@@ -198,7 +353,7 @@ export async function fetchRainfall(
       });
     }
 
-    return results;
+    return shouldDeduplicate ? deduplicateRainfallRecords(results) : results;
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }

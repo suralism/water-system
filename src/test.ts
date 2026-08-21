@@ -147,6 +147,116 @@ async function runTests() {
   assert.equal(callCount, 1, "Subsequent call within TTL should return cached data");
 
   console.log("✔ Cache & Deduplication tests passed.");
+
+  console.log("\n=== 5. Testing Station Data Deduplication (RID Dual-Feed & Multi-Agency) ===");
+  const mockDuplicatePayload = {
+    waterlevel_data: {
+      data: [
+        // Duplicate Pair 1: Primary Feed (Fresh date, valid min_bank)
+        {
+          id: 1001,
+          waterlevel_msl: "108.39",
+          waterlevel_m: "3.20",
+          waterlevel_datetime: "2026-08-21 22:00",
+          situation_level: 2,
+          station: {
+            id: 2752,
+            tele_station_oldcode: "M.7",
+            tele_station_lat: "15.222630",
+            tele_station_long: "104.859131",
+            min_bank: "112.0",
+            tele_station_name: { th: "สะพานเสรีประชาธิปไตย", en: "Seri Bridge" }
+          },
+          agency: { agency_shortname: { th: "ชป." } },
+          geocode: { province_code: 34, province_name: { th: "อุบลราชธานี" } }
+        },
+        // Duplicate Pair 1: Secondary Feed (Stale date, min_bank = 0)
+        {
+          id: 1002,
+          waterlevel_msl: "108.06",
+          waterlevel_m: "3.10",
+          waterlevel_datetime: "2026-08-19 16:00",
+          situation_level: 2,
+          station: {
+            id: 11688911,
+            tele_station_oldcode: "ridhydro_M.7",
+            tele_station_lat: "15.222628",
+            tele_station_long: "104.859130",
+            min_bank: 0,
+            tele_station_name: { th: "สะพานเสรีประชาธิปไตย", en: "Seri Bridge" }
+          },
+          agency: { agency_shortname: { th: "ชป." } },
+          geocode: { province_code: 34, province_name: { th: "อุบลราชธานี" } }
+        },
+        // Multi-agency Case: Station A at Piboon Bridge (RID)
+        {
+          id: 1003,
+          waterlevel_msl: "107.79",
+          waterlevel_m: "2.50",
+          waterlevel_datetime: "2026-08-21 22:00",
+          situation_level: 2,
+          station: {
+            id: 2755,
+            tele_station_oldcode: "M.11B",
+            tele_station_lat: "15.249920",
+            tele_station_long: "105.239243",
+            min_bank: "112.0",
+            tele_station_name: { th: "บ้านโพธิ์ตาก", en: "Ban Pho Tak" }
+          },
+          agency: { agency_shortname: { th: "ชป." } },
+          geocode: { province_code: 34, province_name: { th: "อุบลราชธานี" } }
+        },
+        // Multi-agency Case: Station B at Piboon Bridge (HII / สสน. - 24 meters apart, different name)
+        {
+          id: 1004,
+          waterlevel_msl: "107.54",
+          waterlevel_m: "2.40",
+          waterlevel_datetime: "2026-08-21 23:30",
+          situation_level: 2,
+          station: {
+            id: 281,
+            tele_station_oldcode: "MUN011",
+            tele_station_lat: "15.249705",
+            tele_station_long: "105.239300",
+            min_bank: "112.41",
+            tele_station_name: { th: "พิบูลมังสาหาร", en: "Phibun Mangsahan" }
+          },
+          agency: { agency_shortname: { th: "สสน." } },
+          geocode: { province_code: 34, province_name: { th: "อุบลราชธานี" } }
+        }
+      ]
+    }
+  };
+
+  const mockDedupeFetch: typeof fetch = async () => {
+    return new Response(JSON.stringify(mockDuplicatePayload), { status: 200 });
+  };
+
+  const dedupedResults = await fetchWaterLevel({
+    fetchFn: mockDedupeFetch,
+    targetProvinceCode: "34",
+    deduplicate: true,
+  });
+
+  // Out of 4 items:
+  // - 2752 vs 11688911 (M.7 vs ridhydro_M.7) should be merged to 1 station (keeping 2752 with min_bank 112 & latest date)
+  // - 2755 (บ้านโพธิ์ตาก) and 281 (พิบูลมังสาหาร) are distinct agencies/names, so both must be preserved!
+  // Total resulting stations should be 3
+  assert.equal(dedupedResults.length, 3, "Deduplication should merge duplicate RID feed and retain distinct multi-agency stations");
+
+  const seriStation = dedupedResults.find((s) => s.station.nameTh?.includes("สะพานเสรีประชาธิปไตย"));
+  assert.ok(seriStation, "Seri Bridge station must exist");
+  assert.equal(seriStation?.station.id, 2752, "Must choose primary station ID (2752) over stale feed (11688911)");
+  assert.equal(seriStation?.minBankMsl, 112.0, "Must retain valid minBankMsl (112.0)");
+  assert.equal(seriStation?.observedAt, "2026-08-21T15:00:00.000Z", "Must retain latest observation timestamp");
+
+  const phoTakStation = dedupedResults.find((s) => s.station.nameTh?.includes("บ้านโพธิ์ตาก"));
+  const phibunStation = dedupedResults.find((s) => s.station.nameTh?.includes("พิบูลมังสาหาร"));
+  assert.ok(phoTakStation, "Ban Pho Tak (RID) must be preserved");
+  assert.ok(phibunStation, "Phibun Mangsahan (HII) must be preserved");
+
+  console.log("✔ Station Data Deduplication tests passed.");
+
   console.log("\n🎉 ALL UNIT & INTEGRATION LOGIC TESTS PASSED SUCCESSFULLY!");
 }
 

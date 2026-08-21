@@ -1,5 +1,6 @@
 export interface StationRef {
   id: number;
+  oldcode?: string | null;
   nameTh: string | null;
   nameEn: string | null;
   lat: number;
@@ -9,6 +10,7 @@ export interface StationRef {
   amphoeNameTh: string | null;
   tumbonNameTh?: string | null;
   basinNameTh?: string | null;
+  agencyNameTh?: string | null;
 }
 
 export interface WaterLevelRecord {
@@ -54,6 +56,7 @@ export interface ThaiWaterClientOptions {
   timeoutMs?: number;
   fetchFn?: typeof fetch;
   targetProvinceCode?: string | null;
+  deduplicate?: boolean;
 }
 
 export interface CacheOptions {
@@ -61,3 +64,4 @@ export interface CacheOptions {
   pollIntervalMs?: number;      // ความถี่ Background Polling (default: 5 นาที)
   autoStartPolling?: boolean;   // เริ่ม Polling ทันทีหรือไม่ (default: false)
 }
+
