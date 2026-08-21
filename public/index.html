@@ -76,7 +76,7 @@
         <span id="dangerAlertText">มีสถานีน้ำล้นตลิ่ง</span>
       </div>
 
-      <!-- ========== MODE SELECTOR ========== -->
+      <!-- ========== MODE SELECTOR (Segmented Tab Bar) ========== -->
       <section class="mode-selector-section">
         <div class="mode-toggle-bar">
           <button id="modeBtnWater" class="mode-tab-btn active">
@@ -85,7 +85,7 @@
             </div>
             <div class="mode-tab-text">
               <span class="mode-tab-title">สถานีตรวจวัดระดับน้ำ</span>
-              <span class="mode-tab-desc">ติดตามระดับน้ำเทียบตลิ่ง ระยะพ้นตลิ่ง สถานการณ์น้ำล้น และกราฟย้อนหลัง</span>
+              <span class="mode-tab-desc">ติดตามระดับน้ำเทียบตลิ่ง ระยะพ้นตลิ่ง และกราฟย้อนหลัง</span>
             </div>
             <span class="mode-count-badge water" id="badgeWaterCount">0 สถานี</span>
           </button>
@@ -96,7 +96,7 @@
             </div>
             <div class="mode-tab-text">
               <span class="mode-tab-title">สถานีตรวจวัดปริมาณน้ำฝน</span>
-              <span class="mode-tab-desc">ติดตามฝนสะสม 24 ชม., ฝน 1 ชม. ล่าสุด และการกระจายตัวของฝน</span>
+              <span class="mode-tab-desc">ติดตามฝนสะสม 24 ชม., ฝน 1 ชม. ล่าสุด</span>
             </div>
             <span class="mode-count-badge rain" id="badgeRainCount">0 สถานี</span>
           </button>
@@ -106,53 +106,65 @@
       <!-- ========== WATER LEVEL KPI CARDS ========== -->
       <section class="kpi-grid" id="waterKpiGrid">
         <div class="kpi-card danger-card">
-          <div class="kpi-icon-wrap">
-            <i data-lucide="alert-octagon"></i>
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="alert-octagon"></i>
+            </div>
+            <span class="kpi-pill danger">วิกฤต</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">🚨 น้ำล้นตลิ่ง (วิกฤต)</span>
+            <span class="kpi-label">น้ำล้นตลิ่ง</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="waterKpiOverflow">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ระยะพ้นตลิ่ง น้อยกว่า 0 เมตร</span>
+            <span class="kpi-trend">ระยะพ้นตลิ่ง น้อยกว่า 0 ม.</span>
           </div>
         </div>
 
         <div class="kpi-card warning-card">
-          <div class="kpi-icon-wrap">
-            <i data-lucide="alert-triangle"></i>
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="alert-triangle"></i>
+            </div>
+            <span class="kpi-pill warning">เฝ้าระวัง</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">⚠️ เฝ้าระวังน้ำสูง</span>
+            <span class="kpi-label">เฝ้าระวังน้ำสูง</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="waterKpiWarning">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ต่ำกว่าตลิ่ง ไม่เกิน 0.5 เมตร</span>
+            <span class="kpi-trend">ต่ำกว่าตลิ่ง ≤ 0.5 ม.</span>
           </div>
         </div>
 
         <div class="kpi-card info-card">
-          <div class="kpi-icon-wrap">
-            <i data-lucide="shield-check"></i>
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="shield-check"></i>
+            </div>
+            <span class="kpi-pill success">ปกติ</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">✅ ระดับน้ำปกติ</span>
+            <span class="kpi-label">ระดับน้ำปกติ</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="waterKpiNormal">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ต่ำกว่าตลิ่ง มากกว่า 0.5 เมตร</span>
+            <span class="kpi-trend">ต่ำกว่าตลิ่ง > 0.5 ม.</span>
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap" style="background:#dbeafe; color:#0369a1;">
-            <i data-lucide="map-pin"></i>
+        <div class="kpi-card total-card">
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="map-pin"></i>
+            </div>
+            <span class="kpi-pill total">ทั้งหมด</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">สถานีวัดระดับน้ำทั้งหมด</span>
+            <span class="kpi-label">สถานีระดับน้ำทั้งหมด</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="waterKpiTotal">0</span>
               <span class="kpi-unit">สถานี</span>
@@ -165,39 +177,48 @@
       <!-- ========== RAINFALL KPI CARDS ========== -->
       <section class="kpi-grid hidden" id="rainKpiGrid">
         <div class="kpi-card danger-card">
-          <div class="kpi-icon-wrap">
-            <i data-lucide="cloud-lightning"></i>
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="cloud-lightning"></i>
+            </div>
+            <span class="kpi-pill danger">หนักมาก</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">🚨 ฝนตกหนักมาก</span>
+            <span class="kpi-label">ฝนตกหนักมาก</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="rainKpiVeryHeavy">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ฝนสะสม 24 ชม. ≥ 90 มม.</span>
+            <span class="kpi-trend">ฝน 24 ชม. ≥ 90 มม.</span>
           </div>
         </div>
 
         <div class="kpi-card warning-card">
-          <div class="kpi-icon-wrap">
-            <i data-lucide="cloud-rain"></i>
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="cloud-rain"></i>
+            </div>
+            <span class="kpi-pill warning">หนัก</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">⚠️ ฝนตกหนัก</span>
+            <span class="kpi-label">ฝนตกหนัก</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="rainKpiHeavy">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ฝนสะสม 24 ชม. 35–90 มม.</span>
+            <span class="kpi-trend">ฝน 24 ชม. 35–90 มม.</span>
           </div>
         </div>
 
         <div class="kpi-card rain-card">
-          <div class="kpi-icon-wrap">
-            <i data-lucide="droplets"></i>
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="droplets"></i>
+            </div>
+            <span class="kpi-pill rain">สูงสุด</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">🌧️ ฝนสูงสุด 24 ชม.</span>
+            <span class="kpi-label">ฝนสูงสุด 24 ชม.</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="rainKpiMaxVal">0.0</span>
               <span class="kpi-unit">มม.</span>
@@ -206,12 +227,15 @@
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="kpi-icon-wrap" style="background:#dbeafe; color:#0369a1;">
-            <i data-lucide="map-pin"></i>
+        <div class="kpi-card total-card">
+          <div class="kpi-card-header">
+            <div class="kpi-icon-wrap">
+              <i data-lucide="map-pin"></i>
+            </div>
+            <span class="kpi-pill total">ทั้งหมด</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">สถานีวัดน้ำฝนทั้งหมด</span>
+            <span class="kpi-label">สถานีน้ำฝนทั้งหมด</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="rainKpiTotal">0</span>
               <span class="kpi-unit">สถานี</span>

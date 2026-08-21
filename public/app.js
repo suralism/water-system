@@ -403,13 +403,13 @@ function updateLeaderboards() {
 
   // 1. สถานีล้นตลิ่ง
   if (overflowList.length > 0) {
-    html += `<div class="sidebar-section-title" style="color:var(--danger); background:#fef2f2;"><span>🚨 สถานีน้ำล้นตลิ่ง</span><span>${overflowList.length}</span></div>`;
+    html += `<div class="sidebar-section-title" style="color:#991b1b; background:#fef2f2; border-left: 3.5px solid #ef4444;"><span>🚨 สถานีน้ำล้นตลิ่ง</span><span class="sw-pill danger">${overflowList.length}</span></div>`;
     html += overflowList.map((item) => renderSidebarCard(item, "overflow")).join("");
   }
 
   // 2. สถานีเฝ้าระวัง
   if (warningList.length > 0) {
-    html += `<div class="sidebar-section-title" style="color:var(--warning); background:#fffbeb;"><span>⚠️ สถานีเฝ้าระวัง / เตือนภัย HII</span><span>${warningList.length}</span></div>`;
+    html += `<div class="sidebar-section-title" style="color:#92400e; background:#fffbeb; border-left: 3.5px solid #f59e0b;"><span>⚠️ สถานีเฝ้าระวัง / เตือนภัย HII</span><span class="sw-pill warning">${warningList.length}</span></div>`;
     html += warningList.map((item) => renderSidebarCard(item, "warning")).join("");
   }
 
@@ -425,7 +425,7 @@ function updateLeaderboards() {
 
   // 3. สถานีอื่นๆ เรียงตามระยะใกล้ตลิ่ง
   if (normalList.length > 0) {
-    html += `<div class="sidebar-section-title"><span>สถานีอื่นๆ (เรียงตามระยะใกล้ตลิ่ง)</span><span>${normalList.length}</span></div>`;
+    html += `<div class="sidebar-section-title" style="color:#475569; background:#f8fafc; border-left: 3.5px solid #94a3b8;"><span>สถานีอื่นๆ (เรียงตามระยะใกล้ตลิ่ง)</span><span style="font-size:0.72rem; color:#64748b; font-weight:700;">${normalList.length}</span></div>`;
     html += normalList.map((item) => {
       const freeboardStr = formatFreeboard(item.freeboardM, { withSign: true });
       return `
