@@ -6,6 +6,13 @@
   <title>UBONWATCH - ระบบเตือนภัยน้ำ | จ.อุบลราชธานี – ThaiWater (HII)</title>
   <meta name="description" content="UBONWATCH ระบบติดตามระดับน้ำและปริมาณน้ำฝน จังหวัดอุบลราชธานี แบบ Real-time จาก ThaiWater API v3 สถาบันสารสนเทศทรัพยากรน้ำ (HII)">
   <meta name="theme-color" content="#0369a1">
+  <link rel="canonical" href="https://water.ubon.online">
+
+  <!-- Open Graph / Facebook / LINE -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://water.ubon.online">
+  <meta property="og:title" content="UBONWATCH - ระบบเตือนภัยน้ำ จ.อุบลราชธานี">
+  <meta property="og:description" content="ติดตามระดับน้ำและปริมาณน้ำฝนสะสม จ.อุบลราชธานี แบบ Real-time ตลอด 24 ชั่วโมง">
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,12 +44,10 @@
       <div class="navbar-inner">
         <!-- Brand -->
         <div class="nav-brand">
-          <div class="brand-icon">
-            <i data-lucide="waves"></i>
-          </div>
+          <img src="logo.jpg" alt="UBON WATCH Logo" class="brand-logo-img" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid rgba(244,114,182,0.6); box-shadow:0 2px 10px rgba(0,0,0,0.15); background:#fff; flex-shrink:0;">
           <div class="brand-text">
-            <h1>UBONWATCH <span>- ระบบเตือนภัยน้ำ</span></h1>
-            <p class="subtitle">ข้อมูล Real-time • อัปเดตทุก 5 นาที</p>
+            <h1>UBON WATCH <span style="color:#f472b6;">: อุบลช่วยกัน</span></h1>
+            <p class="subtitle">ระบบเตือนภัยน้ำท่วม & ปริมาณฝน • ข้อมูล Real-time</p>
           </div>
         </div>
 
@@ -580,8 +585,8 @@
 
     <!-- ========== FOOTER ========== -->
     <footer class="site-footer">
-      <a href="https://www.hii.or.th" target="_blank" rel="noopener">สถาบันสารสนเทศทรัพยากรน้ำ</a> •
-      ThaiWater API v3 • พัฒนาเพื่อการเตือนภัยน้ำท่วม จ.อุบลราชธานี
+      <a href="https://www.hii.or.th" target="_blank" rel="noopener">สถาบันสารสนเทศทรัพยากรน้ำ (HII)</a> •
+      ThaiWater API v3 • <a href="https://water.ubon.online" target="_blank" style="color:inherit; text-decoration:underline;">water.ubon.online</a>
     </footer>
   </div>
 
@@ -716,7 +721,7 @@
 
       <div class="modal-body snapshot-modal-body">
         <div class="snapshot-canvas-container">
-          <canvas id="snapshotCanvas" width="900" height="540"></canvas>
+          <canvas id="snapshotCanvas" width="1200" height="675"></canvas>
         </div>
         <div class="snapshot-actions">
           <button id="btnDownloadSnapshot" class="btn-snapshot-action primary">

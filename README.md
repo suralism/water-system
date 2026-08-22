@@ -1,146 +1,135 @@
-# ThaiWater Ingestion & Caching Service
+# 🌊 UBONWATCH / ThaiWater Ingestion & Alert System
 
-โมดูล TypeScript / Node.js สำหรับดึงข้อมูลและจัดการแคช **ระดับน้ำ (Water Level)**, **ปริมาณน้ำฝน (Rainfall)** และ **กราฟประวัติย้อนหลัง (Time-series Graph)** จาก **ThaiWater API v3** (สถาบันสารสนเทศทรัพยากรน้ำ - HII) โดยไม่ต้องใช้ API Key
-
----
-
-## 📦 ฟีเจอร์หลัก (Key Features)
-
-1. **Water Level Snapshot**: ดึงระดับน้ำเทียบระดับน้ำทะเลปานกลาง (ม.รทก.), ระดับท้องน้ำ, ความจุ %, ระดับสถานการณ์ (1-5)
-2. **Rainfall Snapshot**: ดึงปริมาณน้ำฝนสะสม 24 ชั่วโมง และ 1 ชั่วโมงล่าสุด
-3. **Station Time-series Graph**: ดึงกราฟประวัติระดับน้ำย้อนหลังรายสถานี
-4. **Timezone Normalization**: แปลงเวลาท้องถิ่นไทย (+07:00) เป็น ISO-8601 UTC
-5. **Data Cleaning & Validation**:
-   - กรองและ Drop สถานีที่ไม่มีพิกัด Latitude/Longitude หรือตกที่ `(0, 0)`
-   - แปลงรหัสจังหวัด `provinceCode` ให้เป็น String 2 หลักเสมอ (เช่น `"50"`, `"10"`)
-   - กรองค่าความสูงตลิ่ง `min_bank <= 0` ให้เป็น `null` เพื่อป้องกันการคำนวณน้ำล้นตลิ่งผิดพลาด
-   - คำนวณระยะพ้นตลิ่ง (`freeboardM = minBankMsl - waterlevelMsl`) โดยค่าบวก = น้ำต่ำกว่าตลิ่ง (ม.), ค่าลบ = น้ำล้นตลิ่ง (ม.)
-6. **Smart Caching & Request Deduplication (Single-Flight)**:
-   - ป้องกันการยิง API ซ้ำซ้อนและลดภาระโหลดข้อมูลขนาด 2–4 MB (~5,500 สถานี)
-   - รองรับ In-memory TTL Cache และ Background Polling (5–10 นาที)
-7. **URL Encoding**: จัดการ Query Parameters ของ Graph API โดยใช้ `%20` สำหรับช่องว่างใน `end_date` อย่างถูกต้อง
+ระบบติดตามและเตือนภัยระดับน้ำ & ปริมาณน้ำฝนแบบ Real-time พัฒนาบน **Cloudflare Workers (Edge Serverless) + Cloudflare D1 (SQLite Database)** เชื่อมต่อข้อมูลจาก **ThaiWater API v3** (สถาบันสารสนเทศทรัพยากรน้ำ - HII)
 
 ---
 
-## 🚀 การติดตั้งและเริ่มใช้งาน (Installation)
+## 📦 ฟีเจอร์หลักของระบบ (Key Features)
+
+1. **🗺️ Interactive Web GIS Map:**
+   * แผนที่ระดับน้ำและปริมาณน้ำฝนสด พร้อมระบบ Marker Clustering และสลับ Base Map หลากหลายแบบ
+   * 🌧️ **เรดาร์กลุ่มฝนสด (Rain Radar Layer):** เชื่อมต่อภาพเรดาร์ตรวจอากาศแบบ Real-time
+   * 📍 **วิเคราะห์ความเสี่ยงใกล้บ้าน (GPS Near Me):** ตรวจหาตำแหน่งผู้ใช้และสรุปสถานะสถานีน้ำและน้ำฝนที่ใกล้ที่สุดทันที
+2. **🌊 แบบจำลองหน้าตัดตลิ่ง 2D (Cross-Section & Physics Simulator):**
+   * กราฟิกจำลองการขึ้น-ลงของระดับน้ำเทียบกับตลิ่งจริง
+   * สไลเดอร์จำลองมวลน้ำเพิ่มขึ้น/ลดลงแบบ Interactive
+3. **📈 กราฟระดับน้ำย้อนหลัง + Cloudflare D1 Cache:**
+   * เก็บประวัติระดับน้ำและน้ำฝนย้อนหลังลง **D1 SQLite** แบบ Idempotent Upsert (ป้องกันข้อมูลซ้ำซ้อน 100%)
+   * ดึงกราฟย้อนหลัง 24 ชม., 48 ชม., 7 วัน, 15 วัน, 30 วัน รวดเร็วระดับ $\le 15$ ms
+   * มี **Cron Trigger (`*/5 * * * *`)** ซิงค์ข้อมูลล่าสุดอัตโนมัติทุก 5 นาที
+4. **📸 Social Share Infographic Card Generator:**
+   * สร้างภาพสรุปสถานการณ์น้ำระดับ **HD (1200 × 675 px / สัดส่วน 16:9)** ด้วย HTML Canvas
+   * ฝังโลโก้หน่วยงาน, ตัวเลขสถิติ KPI, สถานีแม่น้ำสำคัญ, จุดฝนตกหนัก พร้อมลายน้ำเว็บไซต์ สำหรับแชร์ลง LINE / Facebook / Twitter
+5. **⚡ Smart Caching & Request Deduplication (Single-Flight):**
+   * ป้องกันการยิง API ต้นทางซ้ำซ้อน รองรับผู้ใช้งานพร้อมกันจำนวนมากได้อย่างลื่นไหล
+
+---
+
+## 🚀 การติดตั้งและรันในเครื่อง (Local Development)
 
 ```bash
+# 1. ติดตั้ง Dependencies
 npm install
-```
 
-### การทดสอบ (Run Tests)
-```bash
+# 2. ทดสอบระบบ Unit Tests & Database
 npm test
-```
+npm run test:db
 
-### การรันตัวอย่าง (Run Demo)
-```bash
-npm run demo
-```
-
-### การ Build TypeScript
-```bash
-npm run build
+# 3. รันเซิร์ฟเวอร์ Local Dev
+npm run dev
+# เข้าใช้งานที่: http://127.0.0.1:8787
 ```
 
 ---
 
-## 💻 ตัวอย่างการเรียกใช้งาน (Usage Examples)
+## 🏢 ขั้นตอนการ Fork / Clone ไป Deploy ให้หน่วยงานหรือจังหวัดอื่น
 
-### 1. ใช้งานผ่าน `ThaiWaterService` (แนะนำ - มี Cache และ Request Deduplication ในตัว)
+ระบบถูกออกแบบให้เป็น **Multi-tenant / Configurable** สามารถนำไปประยุกต์ใช้กับจังหวัดหรือลุ่มน้ำอื่นๆ ได้อย่างง่ายดาย:
 
-```typescript
-import { ThaiWaterService } from "./src/index.js";
+### ขั้นตอนที่ 1: เตรียมฐานข้อมูล Cloudflare D1 ใหม่
+1. สร้างฐานข้อมูล D1 ใหม่บน Cloudflare:
+   ```bash
+   npx wrangler d1 create <agency>-water-db
+   ```
+   *(จะได้รับ `database_id` เช่น `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`)*
+2. แก้ไขไฟล์ `wrangler.toml`:
+   ```toml
+   name = "<agency>-water-system"  # ชื่อ Worker ของหน่วยงาน
 
-const service = new ThaiWaterService({
-  ttlMs: 5 * 60 * 1000,          // แคช 5 นาที (default)
-  pollIntervalMs: 5 * 60 * 1000, // Background Polling ทุก 5 นาที
-  autoStartPolling: false,       // ตั้งเป็น true หากต้องการให้ Poll อัตโนมัติในเบื้องหลัง
-});
+   [[d1_databases]]
+   binding = "DB"
+   database_name = "<agency>-water-db"
+   database_id = "ใส่-database_id-ที่ได้จากข้อ-1"
 
-// ดึงระดับน้ำ Snapshot
-const waterLevels = await service.getWaterLevel();
-
-// ดึงปริมาณน้ำฝน Snapshot
-const rainfalls = await service.getRainfall();
-
-// กรองสถานีตามรหัสจังหวัด (เช่น เชียงใหม่ รหัส "50")
-const cmStations = await service.getWaterLevelsByProvince("50");
-
-// รวมข้อมูลระดับน้ำ + น้ำฝนตามสถานี
-const combinedMap = await service.getCombinedSnapshot();
-
-// ดึงข้อมูลกราฟย้อนหลังรายสถานี
-const graph = await service.getWaterLevelGraph({
-  stationId: 512,
-  startDate: "2026-08-20",
-  endDate: "2026-08-21 09:00",
-});
-```
+   # (กรณีมี Custom Domain)
+   # routes = [
+   #   { pattern = "water.youragency.go.th", custom_domain = true }
+   # ]
+   ```
+3. รัน Migration เพื่อสร้างโครงสร้างตาราง (Schema):
+   ```bash
+   npx wrangler d1 execute <agency>-water-db --remote --file=./schema.sql
+   ```
 
 ---
 
-### 2. เรียกใช้งานฟังก์ชันโดยตรง (Direct Ingestion Functions)
-
-```typescript
-import {
-  fetchWaterLevel,
-  fetchRainfall,
-  fetchWaterLevelGraph,
-} from "./src/index.js";
-
-// ดึงระดับน้ำ
-const waterLevels = await fetchWaterLevel({
-  userAgent: "my-custom-agent/1.0.0",
-  timeoutMs: 15000,
-});
-
-// ดึงน้ำฝน
-const rainfalls = await fetchRainfall();
-
-// ดึงกราฟประวัติย้อนหลัง
-const graphData = await fetchWaterLevelGraph({
-  stationId: 123,
-  startDate: "2026-08-20",
-  endDate: "2026-08-21 09:00",
-});
-```
+### ขั้นตอนที่ 2: ปรับเปลี่ยนจังหวัด/พิกัดพื้นที่เป้าหมาย
+1. **Backend (`src/thaiwater.ts`):**
+   * ปรับเงื่อนไขการกรองจังหวัด `provinceCode` หรือชื่อจังหวัดเป้าหมาย
+2. **Frontend (`public/app.js`):**
+   * **พิกัดศูนย์กลางแผนที่:** แก้ไขค่า `UBON_COORDS = [lat, lon]` ให้ตรงกับจังหวัดใหม่
+   * **แถบ 5 แม่น้ำสายหลัก (`MAIN_RIVERS`):** ปรับชื่อแม่น้ำและรหัสสถานีสำคัญให้ตรงกับพื้นที่ใหม่
+   * **ลายน้ำบนการ์ด Infographic:** เปลี่ยนโดเมนท้ายการ์ดให้เป็นเว็บของหน่วยงานใหม่
 
 ---
 
-## 📊 โครงสร้างข้อมูล (Data Structures)
+### ขั้นตอนที่ 3: ปรับเปลี่ยนโลโก้ & แบรนดิ้ง (Branding)
+1. นำไฟล์ภาพโลโก้ของหน่วยงานมาวางทับที่:
+   * `public/logo.jpg` (หรือ `.png`)
+2. แก้ไขชื่อระบบ, สโลแกน และ OpenGraph Meta Tags ใน:
+   * `public/index.html` (แถบ Navbar, `<title>`, `<meta property="og:...">`)
+   * `public/app.js` (ในฟังก์ชัน `generateSnapshotCard()`)
 
-### `WaterLevelRecord`
-```typescript
-interface WaterLevelRecord {
-  station: {
-    id: number;
-    nameTh: string | null;
-    nameEn: string | null;
-    lat: number;
-    lon: number;
-    provinceCode: string | null;   // e.g. "50", "10"
-    provinceNameTh: string | null; // e.g. "เชียงใหม่"
-    amphoeNameTh: string | null;
-    tumbonNameTh?: string | null;
-    basinNameTh?: string | null;
-  };
-  waterlevelMsl: number | null;     // ระดับน้ำ ม.รทก.
-  waterlevelLocalM: number | null;   // ระดับน้ำเทียบท้องน้ำ (ม.)
-  minBankMsl: number | null;         // ระดับตลิ่งต่ำสุด (ม.รทก.)
-  freeboardM: number | null;         // ระยะพ้นตลิ่ง (เมตร) [บวก = ต่ำกว่าตลิ่ง, ลบ = ล้นตลิ่ง]
-  situationLevel: number | null;     // ระดับสถานการณ์ (1-5)
-  storagePercent: number | null;     // % ความจุ
-  observedAt: string | null;         // ISO-8601 UTC string
-}
-```
+---
 
-### `RainfallRecord`
-```typescript
-interface RainfallRecord {
-  station: StationRef;
-  rain24h: number | null;            // ฝนสะสม 24 ชม. (มม.)
-  rain1h: number | null;             // ฝน 1 ชม. ล่าสุด (มม.)
-  observedAt: string | null;         // ISO-8601 UTC string
-}
-```
+### ขั้นตอนที่ 4: Build & Deploy ขึ้น Cloudflare Production
+1. Build TypeScript:
+   ```bash
+   npm run build
+   ```
+2. Deploy ไปยัง Cloudflare:
+   ```bash
+   npm run deploy
+   ```
+3. **ดึงข้อมูลประวัติย้อนหลัง 30 วันเข้าฐานข้อมูล (ครั้งแรก):**
+   ```bash
+   curl -X POST https://<worker-subdomain>.workers.dev/api/admin/backfill-graphs?days=30
+   ```
+
+---
+
+## 📡 สรุป API Endpoints
+
+| Endpoint | Method | คำอธิบาย |
+| :--- | :---: | :--- |
+| `/api/water-levels` | `GET` | รายการสถานีวัดระดับน้ำทั้งหมด พร้อมระยะพ้นตลิ่งและสถานะความเสี่ยง |
+| `/api/rainfall` | `GET` | รายการสถานีวัดน้ำฝนทั้งหมด พร้อมปริมาณฝนสะสม 24 ชม. และ 1 ชม. |
+| `/api/amphoes` | `GET` | รายชื่ออำเภอที่มีการติดตั้งสถานีตรวจวัด |
+| `/api/water-levels/graph?station_id=XX&days=N` | `GET` | ข้อมูลกราฟระดับน้ำย้อนหลัง $N$ วัน (ดึงจาก D1 Database ความเร็วสูง) |
+| `/api/admin/sync-d1` | `POST` | สั่งซิงค์ Snapshot ปัจจุบันลง D1 ทันที |
+| `/api/admin/backfill-graphs?days=30` | `POST` | ดึงข้อมูลประวัติย้อนหลังทุกสถานีเข้าเก็บใน D1 |
+
+---
+
+## 🗄️ โครงสร้างฐานข้อมูล (D1 SQLite Schema)
+
+* **`stations`:** ตารางข้อมูลสถานีตรวจวัด (ID, ชื่อไทย/อังกฤษ, ละติจูด, ลองจิจูด, รหัสจังหวัด, อำเภอ, ลุ่มน้ำ)
+* **`water_level_history`:** ประวัติระดับน้ำแบบ Time-series (Primary Key: `station_id + observed_at`)
+* **`rainfall_history`:** ประวัติปริมาณน้ำฝนสะสมแบบ Time-series (Primary Key: `station_id + observed_at`)
+
+---
+
+## 📄 แหล่งข้อมูลอ้างอิง
+* **สถาบันสารสนเทศทรัพยากรน้ำ (องค์การมหาชน) - HII:** [https://www.hii.or.th](https://www.hii.or.th)
+* **ThaiWater Open API v3:** [https://api-v3.thaiwater.net](https://api-v3.thaiwater.net)
+

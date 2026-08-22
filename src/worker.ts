@@ -1,6 +1,17 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { ThaiWaterService } from "./cache-service.js";
+import {
+  D1Database,
+  syncSnapshotToD1,
+  queryWaterLevelHistory,
+  upsertWaterLevelGraphPoints,
+} from "./db.js";
+import { toIso } from "./thaiwater.js";
+
+type Bindings = {
+  DB?: D1Database;
+};
 
 // สร้าง Service สำหรับจัดการแคชใน Worker isolate
 const thaiWaterService = new ThaiWaterService({
@@ -8,7 +19,7 @@ const thaiWaterService = new ThaiWaterService({
   autoStartPolling: false, // บน Workers ใช้ Cron Triggers แทน setInterval
 });
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Bindings }>();
 
 // เปิดใช้งาน CORS สำหรับทุก request
 app.use("/*", cors());
@@ -270,7 +281,7 @@ app.get("/api/amphoes", async (c) => {
 });
 
 /**
- * 6. API: ดึง Time-series Graph ของสถานี
+ * 6. API: ดึง Time-series Graph ของสถานี (รองรับ D1 Database First + Fallback Auto-Backfill)
  */
 app.get("/api/water-levels/graph", async (c) => {
   try {
@@ -285,25 +296,154 @@ app.get("/api/water-levels/graph", async (c) => {
       }, 400);
     }
 
+    const stationIdNum = Number(station_id);
+    const startIso = toIso(start_date) || `${start_date}T00:00:00.000Z`;
+    const endIso = toIso(end_date) || `${end_date}T23:59:59.999Z`;
+
+    // 1. ตรวจสอบใน Cloudflare D1 Database ก่อน (ถ้ามี Binding)
+    if (c.env?.DB) {
+      try {
+        const d1Result = await queryWaterLevelHistory(c.env.DB, stationIdNum, startIso, endIso);
+        if (d1Result && d1Result.points.length > 0) {
+          c.header("Cache-Control", "public, s-maxage=300, max-age=60");
+          c.header("X-Data-Source", "Cloudflare-D1");
+          return c.json({ success: true, source: "d1", data: d1Result });
+        }
+      } catch (d1Err) {
+        console.warn("[D1 Query Warning]:", d1Err);
+      }
+    }
+
+    // 2. Fallback ไปดึงสดจาก ThaiWater API
     const result = await thaiWaterService.getWaterLevelGraph({
       stationId: String(station_id),
       startDate: String(start_date),
       endDate: String(end_date),
     });
 
+    // 3. บันทึกข้อมูลที่เพิ่งดึงได้ลง D1 ใน Background (Auto-Backfill)
+    if (c.env?.DB && result.points && result.points.length > 0) {
+      const db = c.env.DB;
+      const savePromise = upsertWaterLevelGraphPoints(db, stationIdNum, result.points, {
+        minBankMsl: result.minBankMsl,
+        warningLevelMsl: result.warningLevelMsl,
+        criticalLevelMsl: result.criticalLevelMsl,
+        groundLevelMsl: result.groundLevelMsl,
+      }).catch((err) => console.error("[D1 Auto-Save Error]:", err));
+
+      if (c.executionCtx) {
+        c.executionCtx.waitUntil(savePromise);
+      }
+    }
+
     c.header("Cache-Control", "public, s-maxage=300, max-age=60");
-    return c.json({ success: true, data: result });
+    c.header("X-Data-Source", "ThaiWater-API");
+    return c.json({ success: true, source: "thaiwater-api", data: result });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }
 });
 
 /**
- * 7. API: บังคับ Refresh ข้อมูลในแคช
+ * 7. API: Sync Snapshot ปัจจุบันลง Cloudflare D1 ทันที
+ */
+app.post("/api/admin/sync-d1", async (c) => {
+  try {
+    if (!c.env?.DB) {
+      return c.json({ success: false, message: "D1 database binding (DB) is not available" }, 400);
+    }
+
+    const [waterLevels, rainfalls] = await Promise.all([
+      thaiWaterService.getWaterLevel(true),
+      thaiWaterService.getRainfall(true),
+    ]);
+
+    const syncResult = await syncSnapshotToD1(c.env.DB, waterLevels, rainfalls);
+
+    return c.json({
+      success: true,
+      message: "Synced snapshot to D1 database successfully",
+      data: syncResult,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+});
+
+/**
+ * 8. API: Backfill ประวัติกราฟย้อนหลังลง D1 สำหรับทุกสถานีในอุบลราชธานี
+ */
+app.post("/api/admin/backfill-graphs", async (c) => {
+  try {
+    if (!c.env?.DB) {
+      return c.json({ success: false, message: "D1 database binding (DB) is not available" }, 400);
+    }
+
+    const daysStr = c.req.query("days") || "7";
+    const days = Math.min(Math.max(parseInt(daysStr, 10) || 7, 1), 30);
+
+    const waterLevels = await thaiWaterService.getWaterLevel();
+    const db = c.env.DB;
+
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const today = new Date();
+    const startObj = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+    const startDate = `${startObj.getFullYear()}-${pad(startObj.getMonth() + 1)}-${pad(startObj.getDate())}`;
+    const endDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())} ${pad(today.getHours())}:${pad(today.getMinutes())}`;
+
+    let totalPointsSaved = 0;
+    const errors: { stationId: number; error: string }[] = [];
+
+    // ดึงทีละสถานีพร้อมบันทึกลง D1
+    for (const item of waterLevels) {
+      try {
+        const graphResult = await thaiWaterService.getWaterLevelGraph({
+          stationId: item.station.id,
+          startDate,
+          endDate,
+        });
+
+        if (graphResult.points && graphResult.points.length > 0) {
+          const saved = await upsertWaterLevelGraphPoints(db, item.station.id, graphResult.points, {
+            minBankMsl: graphResult.minBankMsl ?? item.minBankMsl,
+            warningLevelMsl: graphResult.warningLevelMsl,
+            criticalLevelMsl: graphResult.criticalLevelMsl,
+            groundLevelMsl: graphResult.groundLevelMsl,
+          });
+          totalPointsSaved += saved;
+        }
+      } catch (err: any) {
+        errors.push({ stationId: item.station.id, error: err.message });
+      }
+    }
+
+    return c.json({
+      success: true,
+      message: `Backfilled graph points for ${waterLevels.length} stations over ${days} days`,
+      totalStations: waterLevels.length,
+      totalPointsSaved,
+      errorsCount: errors.length,
+      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+    });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+});
+
+/**
+ * 9. API: บังคับ Refresh ข้อมูลในแคช
  */
 app.post("/api/refresh", async (c) => {
   try {
     const refreshed = await thaiWaterService.refreshAll();
+
+    // บันทึกลง D1 ด้วยหากมี binding
+    if (c.env?.DB) {
+      syncSnapshotToD1(c.env.DB, refreshed.waterLevels, refreshed.rainfalls).catch((err) =>
+        console.error("[Refresh D1 Sync Error]:", err)
+      );
+    }
+
     return c.json({
       success: true,
       message: "Cache refreshed successfully",
@@ -317,12 +457,13 @@ app.post("/api/refresh", async (c) => {
 });
 
 /**
- * 8. API: Health Check
+ * 10. API: Health Check
  */
 app.get("/api/health", (c) => {
   return c.json({
     status: "ok",
     runtime: "Cloudflare Workers",
+    d1Available: Boolean(c.env?.DB),
     time: new Date().toISOString(),
   });
 });
@@ -331,15 +472,23 @@ export default {
   fetch: app.fetch,
 
   /**
-   * Cron Trigger: ดึงข้อมูลสดจาก ThaiWater อัตโนมัติทุก 5 นาที
+   * Cron Trigger: ดึงข้อมูลสดจาก ThaiWater อัตโนมัติทุก 5 นาที และบันทึกลง D1
    */
-  async scheduled(event: any, env: any, ctx: any) {
+  async scheduled(event: any, env: Bindings, ctx: any) {
     ctx.waitUntil(
-      thaiWaterService.refreshAll().then((result) => {
-        console.log(`[Cron] Auto-refreshed ThaiWater data: ${result.waterLevels.length} water, ${result.rainfalls.length} rain`);
-      }).catch((err) => {
-        console.error("[Cron] Auto-refresh failed:", err);
-      })
+      (async () => {
+        try {
+          const result = await thaiWaterService.refreshAll();
+          console.log(`[Cron] Auto-refreshed ThaiWater data: ${result.waterLevels.length} water, ${result.rainfalls.length} rain`);
+          
+          if (env?.DB) {
+            const syncRes = await syncSnapshotToD1(env.DB, result.waterLevels, result.rainfalls);
+            console.log(`[Cron] Synced to D1: ${syncRes.stationsCount} stations, ${syncRes.waterCount} water records, ${syncRes.rainCount} rain records`);
+          }
+        } catch (err) {
+          console.error("[Cron] Auto-refresh / D1 sync failed:", err);
+        }
+      })()
     );
   },
 };

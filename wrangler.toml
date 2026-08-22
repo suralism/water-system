@@ -10,3 +10,11 @@ directory = "./public"
 # Cron Trigger: ทำงานทุก 5 นาทีเพื่ออัปเดตข้อมูลระดับน้ำและปริมาณน้ำฝน
 [triggers]
 crons = ["*/5 * * * *"]
+
+# D1 Database Configuration (Cloudflare Edge D1)
+[[d1_databases]]
+binding = "DB"
+database_name = "ubonwater-db"
+database_id = "367bc52f-e50e-472c-80a5-8dccc5dc55ef"
+
+

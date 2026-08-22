@@ -10,7 +10,9 @@
     "dev": "wrangler dev",
     "dev:node": "tsx src/server.ts",
     "deploy": "wrangler deploy",
-    "test": "tsx src/test.ts"
+    "demo": "tsx src/demo.ts",
+    "test": "tsx src/test.ts && tsx src/test-db.ts",
+    "test:db": "tsx src/test-db.ts"
   },
   "keywords": [
     "thaiwater",

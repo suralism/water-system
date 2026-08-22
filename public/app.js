@@ -581,13 +581,12 @@ function updateLeaderboards() {
     const isOverflow = type === "overflow";
     const st = item.station;
     const fbText = formatFreeboard(item.freeboardM, { absOnly: true });
-    const fbObj = formatFreeboard(item.freeboardM, { withSign: true, returnObject: true });
     
     let statusText = "";
     if (isOverflow) {
       statusText = `ล้นตลิ่ง ${fbText}`;
     } else if (item.freeboardM !== null && item.freeboardM <= 0.5) {
-      statusText = `ต่ำกว่าตลิ่ง ${fbText}`;
+      statusText = `เฝ้าระวัง (เหลือ ${fbText})`;
     } else {
       statusText = `เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
     }
@@ -595,6 +594,8 @@ function updateLeaderboards() {
     const obsTime = item.observedAt
       ? new Date(item.observedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })
       : "-";
+
+    const diffText = item.freeboardM !== null ? (isOverflow ? `ล้น ${fbText}` : `เหลือ ${fbText}`) : "-";
 
     return `
       <div class="sidebar-warning-box ${isOverflow ? 'danger' : 'warning'}">
@@ -616,8 +617,8 @@ function updateLeaderboards() {
             <span class="sw-m-val">${item.minBankMsl !== null ? item.minBankMsl.toFixed(2) : "-"}</span>
           </div>
           <div class="sw-metric-item">
-            <span class="sw-m-label">ระดับเทียบตลิ่ง</span>
-            <span class="sw-m-val ${isOverflow ? 'danger' : 'warning'}">${isOverflow ? 'ล้น ' : 'ต่ำกว่า '}${fbObj.num} ${fbObj.unit}</span>
+            <span class="sw-m-label">ระยะพ้นตลิ่ง</span>
+            <span class="sw-m-val ${isOverflow ? 'danger' : 'warning'}">${diffText}</span>
           </div>
         </div>
 
@@ -732,14 +733,16 @@ function renderMapMarkers() {
 
       if (item.freeboardM !== null && item.freeboardM < 0) {
         markerColor = "#ef4444"; // ล้นตลิ่ง (red)
-        statusText = `น้ำล้นตลิ่ง (${fbText})`;
+        statusText = `🚨 น้ำล้นตลิ่ง (${fbText})`;
         isDanger = true;
       } else if (
         (item.freeboardM !== null && item.freeboardM <= 0.5) ||
         (item.situationLevel !== null && item.situationLevel >= 4)
       ) {
         markerColor = "#f59e0b"; // เฝ้าระวัง (orange)
-        statusText = `เฝ้าระวังน้ำสูง (ต่ำกว่าตลิ่ง ${item.freeboardM !== null ? fbText : "N/A"})`;
+        statusText = item.freeboardM !== null ? `⚠️ เฝ้าระวัง (เหลือ ${fbText})` : `⚠️ เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
+      } else {
+        statusText = "✅ ระดับน้ำปกติ";
       }
 
       const circleMarker = L.circleMarker([lat, lon], {
@@ -759,6 +762,9 @@ function renderMapMarkers() {
           ? 'background:#fffbeb; color:#92400e; border:1px solid #fcd34d;'
           : 'background:#f0fdf4; color:#14532d; border:1px solid #86efac;';
 
+      const diffText = item.freeboardM !== null ? (item.freeboardM < 0 ? `ล้น ${fbText}` : `เหลือ ${fbText}`) : "-";
+      const diffColor = item.freeboardM !== null && item.freeboardM < 0 ? '#dc2626' : (item.freeboardM !== null && item.freeboardM <= 0.5 ? '#d97706' : '#16a34a');
+
       const popupHtml = `
         <div class="map-popup-card">
           <div class="popup-header">
@@ -776,13 +782,13 @@ function renderMapMarkers() {
               <span class="pdv">${item.minBankMsl !== null ? item.minBankMsl.toFixed(2) : "-"}</span>
             </div>
             <div class="popup-data-item">
-              <span class="pdl">ระดับเทียบตลิ่ง</span>
-              <span class="pdv" style="color:${item.freeboardM !== null && item.freeboardM < 0 ? '#dc2626' : '#16a34a'}; font-weight:700;">
-                ${item.freeboardM !== null ? (item.freeboardM < 0 ? 'ล้นตลิ่ง ' + fbText : 'ต่ำกว่าตลิ่ง ' + fbText) : '-'}
+              <span class="pdl">ระยะพ้นตลิ่ง</span>
+              <span class="pdv" style="color:${diffColor}; font-weight:700;">
+                ${diffText}
               </span>
             </div>
             <div class="popup-data-item">
-              <span class="pdl">เวลาวัด</span>
+              <span class="pdl">เวลาตรวจวัด</span>
               <span class="pdv" style="font-size:0.85rem; color:#475569;">${obsTime} น.</span>
             </div>
           </div>
@@ -896,6 +902,9 @@ function renderMapMarkers() {
   }
 
   markerClusterGroup.addLayers(markers);
+  if (radarLayer && map && map.hasLayer(markerClusterGroup)) {
+    map.removeLayer(markerClusterGroup);
+  }
 }
 
 /**
@@ -962,6 +971,8 @@ function toggleRadar(forceState) {
   const radarBtn = document.getElementById("btnToggleRadar");
   const radarNavBtn = document.getElementById("btnToggleRadarNav");
   const playerBar = document.getElementById("radarPlayerBar");
+  const waterMapLegend = document.getElementById("waterMapLegend");
+  const rainMapLegend = document.getElementById("rainMapLegend");
 
   const willEnable = forceState !== undefined ? forceState : !radarLayer;
 
@@ -969,6 +980,16 @@ function toggleRadar(forceState) {
     if (radarBtn) radarBtn.classList.add("active");
     if (radarNavBtn) radarNavBtn.classList.add("active");
     if (playerBar) playerBar.classList.remove("hidden");
+
+    // ซ่อนสัญลักษณ์สถานี (Legend) เมื่อเปิดดูเรดาร์กลุ่มฝน เพื่อไม่ให้บังแผนที่
+    if (rainMapLegend) rainMapLegend.classList.add("hidden");
+    if (waterMapLegend) waterMapLegend.classList.add("hidden");
+
+    // ซ่อน Markers ทั้งหมดบนแผนที่เพื่อดูเรดาร์กลุ่มฝนได้อย่างชัดเจน
+    if (map && markerClusterGroup && map.hasLayer(markerClusterGroup)) {
+      map.removeLayer(markerClusterGroup);
+    }
+
     if (radarTimestamps.length === 0) {
       loadRadarData();
     } else {
@@ -983,6 +1004,15 @@ function toggleRadar(forceState) {
       radarLayer = null;
     }
     stopRadarPlay();
+
+    // แสดง Markers กลับมาบนแผนที่
+    if (map && markerClusterGroup && !map.hasLayer(markerClusterGroup)) {
+      map.addLayer(markerClusterGroup);
+    }
+
+    // แสดงสัญลักษณ์สถานี (Legend) กลับมาตามโหมดที่เปิดอยู่ (น้ำ / ฝน)
+    if (waterMapLegend) waterMapLegend.classList.toggle("hidden", currentMode !== "water");
+    if (rainMapLegend) rainMapLegend.classList.toggle("hidden", currentMode !== "rain");
   }
 }
 
@@ -1178,8 +1208,44 @@ function processUserLocation(uLat, uLon) {
     iconAnchor: [14, 14],
   });
 
+  const isOver = closestWater && closestWater.freeboardM !== null && closestWater.freeboardM < 0;
+  const isWarn = closestWater && closestWater.freeboardM !== null && closestWater.freeboardM <= 0.5;
+  const fbText = closestWater ? formatFreeboard(closestWater.freeboardM, { absOnly: true }) : "-";
+  const userWaterStatus = closestWater ? (isOver ? `🚨 ล้น ${fbText}` : (isWarn ? `⚠️ เฝ้าระวัง (เหลือ ${fbText})` : `✅ ปกติ (เหลือ ${fbText})`)) : "-";
+  const userWaterColor = isOver ? '#dc2626' : (isWarn ? '#d97706' : '#16a34a');
+
+  const userPopupHtml = `
+    <div class="map-popup-card user-loc-popup">
+      <div class="popup-header">
+        <span class="popup-tag" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">
+          📍 ตำแหน่งของคุณ
+        </span>
+        <h4>พิกัดปัจจุบัน</h4>
+        <p class="popup-loc">${uLat.toFixed(4)}, ${uLon.toFixed(4)}</p>
+      </div>
+      <div class="popup-data-grid" style="margin-bottom:4px;">
+        <div class="popup-data-item">
+          <span class="pdl">สถานีน้ำใกล้สุด</span>
+          <span class="pdv" style="font-size:0.82rem; color:#0369a1;" title="${closestWater?.station.nameTh || '-'}">
+            ${closestWater ? (closestWater.station.nameTh || 'สถานี ' + closestWater.station.id) : '-'}
+          </span>
+        </div>
+        <div class="popup-data-item">
+          <span class="pdl">ระยะห่าง</span>
+          <span class="pdv" style="color:#2563eb;">${minWaterDist.toFixed(1)} กม.</span>
+        </div>
+        <div class="popup-data-item" style="grid-column:span 2; margin-top:2px;">
+          <span class="pdl">สถานะระดับน้ำจุดใกล้เคียง</span>
+          <span class="pdv" style="color:${userWaterColor}; font-size:0.86rem; font-weight:700;">
+            ${userWaterStatus}
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+
   userLocationMarker = L.marker([uLat, uLon], { icon: userIcon }).addTo(map);
-  userLocationMarker.bindPopup(`<b>📍 พิกัดของคุณ</b><br>ห่างจากสถานีระดับน้ำใกล้สุด ${minWaterDist.toFixed(1)} กม.`).openPopup();
+  userLocationMarker.bindPopup(userPopupHtml, { maxWidth: 300 }).openPopup();
 
   map.flyTo([uLat, uLon], 12, { duration: 1 });
 }
@@ -1436,8 +1502,27 @@ function drawCrossSection() {
 /**
  * 12. Social Share Snapshot Infographic Card Generator
  */
-function openSnapshotModal() {
+let appLogoImage = null;
+
+function getAppLogoImage() {
+  if (appLogoImage) return Promise.resolve(appLogoImage);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = "logo.jpg";
+    img.onload = () => {
+      appLogoImage = img;
+      resolve(img);
+    };
+    img.onerror = () => {
+      resolve(null);
+    };
+  });
+}
+
+async function openSnapshotModal() {
   document.getElementById("snapshotModalBackdrop").classList.add("open");
+  await getAppLogoImage();
   generateSnapshotCard();
 }
 
@@ -1445,45 +1530,150 @@ function generateSnapshotCard() {
   const canvas = document.getElementById("snapshotCanvas");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
+  
+  canvas.width = 1200;
+  canvas.height = 675;
   const width = canvas.width;
   const height = canvas.height;
 
-  // Background Gradient
+  // Helper สำหรับวาดกล่องโค้งมนแบบ Glassmorphism
+  function drawRoundedRect(x, y, w, h, radius, fillStyle, strokeStyle, lineWidth = 1) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, radius);
+    if (fillStyle) {
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    }
+    if (strokeStyle) {
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 1. Background Gradient (Deep Modern Navy / Space Blue)
   const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-  bgGrad.addColorStop(0, "#081326");
-  bgGrad.addColorStop(0.5, "#0d203d");
-  bgGrad.addColorStop(1, "#050b17");
+  bgGrad.addColorStop(0, "#070d1e");
+  bgGrad.addColorStop(0.35, "#0b1528");
+  bgGrad.addColorStop(0.7, "#0f1c35");
+  bgGrad.addColorStop(1, "#080e1c");
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // Wave Background Art
-  ctx.fillStyle = "rgba(14, 165, 233, 0.08)";
+  // 2. Ambient Glow & Lighting Effects
+  const glow1 = ctx.createRadialGradient(150, 100, 10, 150, 100, 420);
+  glow1.addColorStop(0, "rgba(56, 189, 248, 0.16)");
+  glow1.addColorStop(1, "rgba(56, 189, 248, 0)");
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, width, height);
+
+  const glow2 = ctx.createRadialGradient(width - 180, 180, 20, width - 180, 180, 480);
+  glow2.addColorStop(0, "rgba(244, 114, 182, 0.15)"); // Subtle pink bloom matching lotus logo
+  glow2.addColorStop(1, "rgba(244, 114, 182, 0)");
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, width, height);
+
+  const glow3 = ctx.createRadialGradient(width / 2, height - 40, 20, width / 2, height - 40, 380);
+  glow3.addColorStop(0, "rgba(16, 185, 129, 0.08)");
+  glow3.addColorStop(1, "rgba(16, 185, 129, 0)");
+  ctx.fillStyle = glow3;
+  ctx.fillRect(0, 0, width, height);
+
+  // Subtle Wave Decorative Lines at bottom
+  ctx.save();
+  ctx.fillStyle = "rgba(14, 165, 233, 0.04)";
   ctx.beginPath();
   ctx.moveTo(0, height);
-  for (let x = 0; x <= width; x += 40) {
-    ctx.lineTo(x, height - 80 + Math.sin(x * 0.015) * 25);
+  for (let x = 0; x <= width; x += 30) {
+    ctx.lineTo(x, height - 85 + Math.sin(x * 0.012) * 20);
   }
   ctx.lineTo(width, height);
   ctx.closePath();
   ctx.fill();
 
-  // Brand Header
-  ctx.fillStyle = "#38bdf8";
-  ctx.font = "bold 28px 'Sarabun', sans-serif";
-  ctx.fillText("UBONWATCH", 45, 60);
+  ctx.fillStyle = "rgba(59, 130, 246, 0.03)";
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  for (let x = 0; x <= width; x += 30) {
+    ctx.lineTo(x, height - 55 + Math.cos(x * 0.015) * 18);
+  }
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 
+  // 3. HEADER AREA (y: 28 to 110)
+  // Live Status Badge
+  drawRoundedRect(45, 34, 140, 26, 13, "rgba(239, 68, 68, 0.18)", "rgba(239, 68, 68, 0.5)", 1.2);
+  ctx.fillStyle = "#ef4444";
+  ctx.beginPath();
+  ctx.arc(58, 47, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#fca5a5";
+  ctx.font = "bold 12px 'Sarabun', sans-serif";
+  ctx.fillText("LIVE REPORT", 70, 51);
+
+  // Top-Right: Official Brand Card with Logo Image
+  const brandCardW = 285;
+  const brandCardH = 68;
+  const brandCardX = width - brandCardW - 45;
+  const brandCardY = 28;
+
+  drawRoundedRect(brandCardX, brandCardY, brandCardW, brandCardH, 16, "rgba(255, 255, 255, 0.05)", "rgba(244, 114, 182, 0.35)", 1.2);
+
+  // Draw Circular Cropped Logo Image
+  const logoSize = 54;
+  const logoX = brandCardX + 8;
+  const logoY = brandCardY + (brandCardH - logoSize) / 2;
+
+  if (appLogoImage) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.clip();
+    ctx.drawImage(appLogoImage, logoX, logoY, logoSize, logoSize);
+    ctx.restore();
+
+    // Subtle pink ring border matching the lotus theme
+    ctx.beginPath();
+    ctx.arc(logoX + logoSize / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(244, 114, 182, 0.8)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Brand text next to logo
+  const textX = logoX + logoSize + 12;
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 20px 'Sarabun', sans-serif";
-  ctx.fillText("– สรุปสถานการณ์น้ำ จ.อุบลราชธานี", 220, 60);
+  ctx.font = "800 15px 'Sarabun', sans-serif";
+  ctx.fillText("UBON WATCH", textX, brandCardY + 28);
 
+  ctx.fillStyle = "#f472b6";
+  ctx.font = "700 13.5px 'Sarabun', sans-serif";
+  ctx.fillText(": อุบลช่วยกัน", textX + 98, brandCardY + 28);
+
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "500 11px 'Sarabun', sans-serif";
+  ctx.fillText("แจ้งข่าว • แจ้งเหตุ • เตือนภัยน้ำ", textX, brandCardY + 50);
+
+  // Main Title
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 23px 'Sarabun', sans-serif";
+  ctx.fillText("รายงานสรุปสถานการณ์น้ำ & ปริมาณฝน จ.อุบลราชธานี", 45, 86);
+
+  // Subtitle / Date / Time
   const now = new Date();
   const dateStr = now.toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" });
   const timeStr = now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
   ctx.fillStyle = "#94a3b8";
-  ctx.font = "14px 'Sarabun', sans-serif";
-  ctx.fillText(`ข้อมูล Real-time ณ ${dateStr} เวลา ${timeStr} • ThaiWater (HII)`, 45, 90);
+  ctx.font = "500 13px 'Sarabun', sans-serif";
+  ctx.fillText(`ข้อมูล ณ วันที่ ${dateStr} เวลา ${timeStr} • สถาบันสารสนเทศทรัพยากรน้ำ (HII) / ThaiWater`, 45, 108);
 
-  // KPI Boxes
+  // 4. KPI STATS CARDS (4 Cards Grid, y: 125, h: 100)
   let overflowCount = 0;
   let warningCount = 0;
   let normalCount = 0;
@@ -1493,76 +1683,257 @@ function generateSnapshotCard() {
     else normalCount++;
   });
 
+  const sortedRain = [...allRainfalls]
+    .filter((r) => r.rain24h !== null && r.rain24h > 0)
+    .sort((a, b) => (b.rain24h ?? 0) - (a.rain24h ?? 0));
+  const topRain = sortedRain[0];
+  const maxRainVal = topRain?.rain24h !== null && topRain?.rain24h !== undefined ? topRain.rain24h.toFixed(1) : "0.0";
+  const topRainName = topRain ? `${topRain.station.nameTh || topRain.station.id} (อ.${topRain.station.amphoeNameTh || "-"})` : "ไม่มีฝนสะสม";
+
   const kpis = [
-    { label: "น้ำล้นตลิ่ง (วิกฤต)", val: overflowCount, color: "#ef4444", bg: "rgba(239, 68, 68, 0.15)" },
-    { label: "เฝ้าระวังน้ำสูง", val: warningCount, color: "#f59e0b", bg: "rgba(245, 158, 11, 0.15)" },
-    { label: "ระดับน้ำปกติ", val: normalCount, color: "#10b981", bg: "rgba(16, 185, 129, 0.15)" },
-    { label: "สถานีตรวจวัดทั้งหมด", val: allWaterLevels.length, color: "#38bdf8", bg: "rgba(56, 189, 248, 0.15)" },
+    {
+      label: "น้ำล้นตลิ่ง (วิกฤต)",
+      val: overflowCount,
+      unit: "สถานี",
+      sub: overflowCount > 0 ? "ต้องเฝ้าระวังสูงสุด 🚨" : "ไม่มีจุดวิกฤต",
+      color: "#ef4444",
+      bg: "rgba(239, 68, 68, 0.12)",
+      border: "rgba(239, 68, 68, 0.35)",
+    },
+    {
+      label: "เฝ้าระวังน้ำสูง",
+      val: warningCount,
+      unit: "สถานี",
+      sub: "ต่ำกว่าตลิ่ง ≤ 0.5 ม.",
+      color: "#f59e0b",
+      bg: "rgba(245, 158, 11, 0.12)",
+      border: "rgba(245, 158, 11, 0.35)",
+    },
+    {
+      label: "ระดับน้ำปกติ",
+      val: normalCount,
+      unit: "สถานี",
+      sub: "อยู่ในเกณฑ์ปลอดภัย ✅",
+      color: "#10b981",
+      bg: "rgba(16, 185, 129, 0.12)",
+      border: "rgba(16, 185, 129, 0.35)",
+    },
+    {
+      label: "ฝนสะสม 24 ชม. สูงสุด",
+      val: maxRainVal,
+      unit: "มม.",
+      sub: topRainName.length > 22 ? topRainName.slice(0, 20) + "..." : topRainName,
+      color: "#38bdf8",
+      bg: "rgba(56, 189, 248, 0.12)",
+      border: "rgba(56, 189, 248, 0.35)",
+    },
   ];
 
-  const boxW = 185;
-  const boxH = 90;
-  const startX = 45;
-  const boxY = 120;
+  const cardW = 262;
+  const cardH = 100;
+  const cardY = 125;
+  const gap = 20;
 
   kpis.forEach((kpi, idx) => {
-    const x = startX + idx * (boxW + 22);
-    ctx.fillStyle = kpi.bg;
-    ctx.strokeStyle = kpi.color;
-    ctx.lineWidth = 1.5;
+    const cx = 45 + idx * (cardW + gap);
+    drawRoundedRect(cx, cardY, cardW, cardH, 12, kpi.bg, kpi.border, 1.2);
 
-    // Rounded box
-    ctx.beginPath();
-    ctx.roundRect(x, boxY, boxW, boxH, 10);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "12px 'Sarabun', sans-serif";
-    ctx.fillText(kpi.label, x + 14, boxY + 28);
-
+    // Accent left strip
     ctx.fillStyle = kpi.color;
-    ctx.font = "bold 32px 'Sarabun', sans-serif";
-    ctx.fillText(String(kpi.val), x + 14, boxY + 68);
-
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "12px 'Sarabun', sans-serif";
-    ctx.fillText("สถานี", x + 120, boxY + 68);
-  });
-
-  // Top River Stations Highlights
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 16px 'Sarabun', sans-serif";
-  ctx.fillText("🌊 ไฮไลต์ 4 จุดวัดน้ำสำคัญใน จ.อุบลฯ:", 45, 250);
-
-  const sampleStations = allWaterLevels.slice(0, 4);
-  sampleStations.forEach((st, idx) => {
-    const rowY = 285 + idx * 48;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
     ctx.beginPath();
-    ctx.roundRect(45, rowY - 20, width - 90, 40, 6);
+    ctx.roundRect(cx, cardY + 12, 4, cardH - 24, 2);
     ctx.fill();
 
-    ctx.fillStyle = "#f8fafc";
-    ctx.font = "bold 14px 'Sarabun', sans-serif";
-    ctx.fillText(`${idx + 1}. ${st.station.nameTh || "สถานี " + st.station.id} (อ.${st.station.amphoeNameTh || "-"})`, 60, rowY + 5);
+    // Title
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "600 12.5px 'Sarabun', sans-serif";
+    ctx.fillText(kpi.label, cx + 18, cardY + 26);
 
-    const isOver = st.freeboardM !== null && st.freeboardM < 0;
-    const fbText = formatFreeboard(st.freeboardM, { absOnly: true });
+    // Big Value
+    ctx.fillStyle = kpi.color;
+    ctx.font = "800 32px 'Sarabun', sans-serif";
+    ctx.fillText(String(kpi.val), cx + 18, cardY + 65);
 
-    ctx.fillStyle = "#38bdf8";
-    ctx.font = "14px 'Sarabun', sans-serif";
-    ctx.fillText(`ระดับน้ำ: ${st.waterlevelMsl !== null ? st.waterlevelMsl.toFixed(2) : "-"} ม.รทก.`, width - 380, rowY + 5);
+    // Unit
+    const valWidth = ctx.measureText(String(kpi.val)).width;
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "600 13px 'Sarabun', sans-serif";
+    ctx.fillText(kpi.unit, cx + 22 + valWidth, cardY + 63);
 
-    ctx.fillStyle = isOver ? "#ef4444" : "#10b981";
-    ctx.font = "bold 14px 'Sarabun', sans-serif";
-    ctx.fillText(`${isOver ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}`, width - 180, rowY + 5);
+    // Subtitle
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "400 11px 'Sarabun', sans-serif";
+    ctx.fillText(kpi.sub, cx + 18, cardY + 87);
   });
 
-  // Footer Link & Watermark
+  // 5. TWO COLUMNS DETAIL SECTION (y: 245 to 575)
+  const colY = 245;
+  const colH = 330;
+  const col1W = 545;
+  const col2W = 545;
+  const col1X = 45;
+  const col2X = 610;
+
+  // --- COLUMN 1: สถานีระดับน้ำสำคัญ (Left) ---
+  drawRoundedRect(col1X, colY, col1W, colH, 14, "rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.08)", 1);
+
+  // Column 1 Header
+  ctx.fillStyle = "#38bdf8";
+  ctx.font = "700 15px 'Sarabun', sans-serif";
+  ctx.fillText("🌊 จุดตรวจวัดระดับน้ำสำคัญ & เสี่ยงล้นตลิ่ง", col1X + 18, colY + 30);
   ctx.fillStyle = "#64748b";
-  ctx.font = "13px 'Sarabun', sans-serif";
-  ctx.fillText("ระบบเตือนภัยน้ำท่วม จ.อุบลราชธานี • ติดตามสดได้ที่: https://water.ubon.online", 45, height - 25);
+  ctx.font = "400 12px 'Sarabun', sans-serif";
+  ctx.fillText("ระยะพ้นตลิ่ง (ม.)", col1X + col1W - 110, colY + 30);
+
+  // Top Water Stations (prioritize overflow -> warning -> first stations)
+  const sortedWater = [...allWaterLevels].sort((a, b) => {
+    const aOver = a.freeboardM !== null && a.freeboardM < 0 ? -100 : (a.freeboardM ?? 999);
+    const bOver = b.freeboardM !== null && b.freeboardM < 0 ? -100 : (b.freeboardM ?? 999);
+    return aOver - bOver;
+  }).slice(0, 4);
+
+  sortedWater.forEach((st, idx) => {
+    const rowY = colY + 48 + idx * 68;
+    const isOver = st.freeboardM !== null && st.freeboardM < 0;
+    const isWarn = !isOver && st.freeboardM !== null && st.freeboardM <= 0.5;
+
+    let rowBg = "rgba(255, 255, 255, 0.02)";
+    let rowBorder = "rgba(255, 255, 255, 0.05)";
+    let badgeBg = "rgba(16, 185, 129, 0.15)";
+    let badgeBorder = "rgba(16, 185, 129, 0.4)";
+    let badgeColor = "#10b981";
+    let badgeText = "ปกติ";
+
+    if (isOver) {
+      rowBg = "rgba(239, 68, 68, 0.08)";
+      rowBorder = "rgba(239, 68, 68, 0.25)";
+      badgeBg = "rgba(239, 68, 68, 0.2)";
+      badgeBorder = "rgba(239, 68, 68, 0.5)";
+      badgeColor = "#ef4444";
+      badgeText = `ล้นตลิ่ง ${Math.abs(st.freeboardM).toFixed(2)} ม.`;
+    } else if (isWarn) {
+      rowBg = "rgba(245, 158, 11, 0.08)";
+      rowBorder = "rgba(245, 158, 11, 0.25)";
+      badgeBg = "rgba(245, 158, 11, 0.2)";
+      badgeBorder = "rgba(245, 158, 11, 0.5)";
+      badgeColor = "#f59e0b";
+      badgeText = `เฝ้าระวัง (${st.freeboardM.toFixed(2)} ม.)`;
+    } else if (st.freeboardM !== null) {
+      badgeText = `ต่ำกว่าตลิ่ง ${st.freeboardM.toFixed(2)} ม.`;
+    }
+
+    drawRoundedRect(col1X + 14, rowY, col1W - 28, 58, 8, rowBg, rowBorder, 1);
+
+    // Station Name
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 13.5px 'Sarabun', sans-serif";
+    const stName = `${idx + 1}. ${st.station.oldcode ? '[' + st.station.oldcode + '] ' : ''}${st.station.nameTh || 'สถานี ' + st.station.id}`;
+    const cleanName = stName.length > 32 ? stName.slice(0, 30) + "..." : stName;
+    ctx.fillText(cleanName, col1X + 26, rowY + 24);
+
+    // Amphoe & Basin
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "400 11.5px 'Sarabun', sans-serif";
+    ctx.fillText(`อ.${st.station.amphoeNameTh || "-"} • ระดับน้ำ: ${st.waterlevelMsl !== null ? st.waterlevelMsl.toFixed(2) + ' ม.รทก.' : '-'}`, col1X + 26, rowY + 45);
+
+    // Status Badge on Right
+    drawRoundedRect(col1X + col1W - 165, rowY + 16, 140, 26, 6, badgeBg, badgeBorder, 1);
+    ctx.fillStyle = badgeColor;
+    ctx.font = "700 11.5px 'Sarabun', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(badgeText, col1X + col1W - 95, rowY + 33);
+    ctx.textAlign = "left";
+  });
+
+  // --- COLUMN 2: สถานีปริมาณฝนสะสมสูงสุด 24 ชม. (Right) ---
+  drawRoundedRect(col2X, colY, col2W, colH, 14, "rgba(255, 255, 255, 0.03)", "rgba(255, 255, 255, 0.08)", 1);
+
+  // Column 2 Header
+  ctx.fillStyle = "#38bdf8";
+  ctx.font = "700 15px 'Sarabun', sans-serif";
+  ctx.fillText("🌧️ สถานีปริมาณน้ำฝนสะสมสูงสุด (24 ชม.)", col2X + 18, colY + 30);
+  ctx.fillStyle = "#64748b";
+  ctx.font = "400 12px 'Sarabun', sans-serif";
+  ctx.fillText("ฝน 24 ชม. (มม.)", col2X + col2W - 105, colY + 30);
+
+  const top4Rain = sortedRain.slice(0, 4);
+
+  if (top4Rain.length === 0) {
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "500 14px 'Sarabun', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("ไม่มีรายงานฝนตกสะสมในพื้นที่ จ.อุบลราชธานี ในรอบ 24 ชม.", col2X + col2W / 2, colY + colH / 2);
+    ctx.textAlign = "left";
+  } else {
+    top4Rain.forEach((r, idx) => {
+      const rowY = colY + 48 + idx * 68;
+      const rainVal = r.rain24h ?? 0;
+      let rainColor = "#38bdf8";
+      let rainLabel = "ฝนเล็กน้อย";
+      if (rainVal >= 90) { rainColor = "#ef4444"; rainLabel = "ฝนหนักมาก"; }
+      else if (rainVal >= 35) { rainColor = "#f59e0b"; rainLabel = "ฝนหนัก"; }
+      else if (rainVal >= 10) { rainColor = "#10b981"; rainLabel = "ฝนปานกลาง"; }
+
+      drawRoundedRect(col2X + 14, rowY, col2W - 28, 58, 8, "rgba(255, 255, 255, 0.02)", "rgba(255, 255, 255, 0.05)", 1);
+
+      // Station Name
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "700 13.5px 'Sarabun', sans-serif";
+      const rName = `${idx + 1}. ${r.station.nameTh || 'สถานี ' + r.station.id}`;
+      const cleanRName = rName.length > 32 ? rName.slice(0, 30) + "..." : rName;
+      ctx.fillText(cleanRName, col2X + 26, rowY + 24);
+
+      // Amphoe & Category
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "400 11.5px 'Sarabun', sans-serif";
+      ctx.fillText(`อ.${r.station.amphoeNameTh || "-"} • ระดับ: `, col2X + 26, rowY + 45);
+      ctx.fillStyle = rainColor;
+      ctx.font = "600 11.5px 'Sarabun', sans-serif";
+      ctx.fillText(rainLabel, col2X + 160, rowY + 45);
+
+      // Rain Value Badge
+      drawRoundedRect(col2X + col2W - 130, rowY + 16, 105, 26, 6, "rgba(56, 189, 248, 0.15)", "rgba(56, 189, 248, 0.4)", 1);
+      ctx.fillStyle = "#38bdf8";
+      ctx.font = "800 13.5px 'Sarabun', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`${rainVal.toFixed(1)} มม.`, col2X + col2W - 78, rowY + 34);
+      ctx.textAlign = "left";
+    });
+  }
+
+  // 6. BOTTOM STATUS / VERDICT BAR (y: 592, h: 50)
+  const barY = 592;
+  const barH = 50;
+  let verdictBg = "rgba(16, 185, 129, 0.12)";
+  let verdictBorder = "rgba(16, 185, 129, 0.35)";
+  let verdictText = `✅ สรุปสถานการณ์: ระดับน้ำแม่น้ำมูล-ชีอยู่ในเกณฑ์ปกติทุกจุดตรวจวัด สภาพอากาศปกติ`;
+  let verdictColor = "#10b981";
+
+  if (overflowCount > 0) {
+    verdictBg = "rgba(239, 68, 68, 0.15)";
+    verdictBorder = "rgba(239, 68, 68, 0.45)";
+    verdictText = `🚨 สรุปสถานการณ์: พบน้ำล้นตลิ่ง ${overflowCount} สถานี ขอให้ประชาชนพื้นที่ลุ่มต่ำริมน้ำมูลเตรียมพร้อมรับสถานการณ์`;
+    verdictColor = "#ef4444";
+  } else if (warningCount > 0) {
+    verdictBg = "rgba(245, 158, 11, 0.15)";
+    verdictBorder = "rgba(245, 158, 11, 0.45)";
+    verdictText = `⚠️ สรุปสถานการณ์: ระดับน้ำอยู่ในเกณฑ์เฝ้าระวัง ${warningCount} สถานี ยังไม่มีรายงานน้ำล้นตลิ่งในพื้นที่`;
+    verdictColor = "#f59e0b";
+  }
+
+  drawRoundedRect(45, barY, width - 90, barH, 10, verdictBg, verdictBorder, 1.2);
+
+  // Verdict Text
+  ctx.fillStyle = verdictColor;
+  ctx.font = "700 13px 'Sarabun', sans-serif";
+  ctx.fillText(verdictText, 62, barY + 31);
+
+  // Website Link watermark
+  ctx.fillStyle = "#64748b";
+  ctx.font = "500 11.5px 'Sarabun', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("🌐 water.ubon.online", width - 62, barY + 31);
+  ctx.textAlign = "left";
 }
 
 function downloadSnapshot() {
@@ -2039,8 +2410,9 @@ function setupEventListeners() {
     waterFilterPills.classList.toggle("hidden", newMode !== "water");
     rainFilterPills.classList.toggle("hidden", newMode !== "rain");
 
-    waterMapLegend.classList.toggle("hidden", newMode !== "water");
-    rainMapLegend.classList.toggle("hidden", newMode !== "rain");
+    const isRadarActive = Boolean(radarLayer);
+    waterMapLegend.classList.toggle("hidden", newMode !== "water" || isRadarActive);
+    rainMapLegend.classList.toggle("hidden", newMode !== "rain" || isRadarActive);
 
     waterLeaderCard.classList.toggle("hidden", newMode !== "water");
     rainLeaderCard.classList.toggle("hidden", newMode !== "rain");
