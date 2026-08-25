@@ -34,7 +34,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
   <div class="app-layout">
@@ -44,10 +44,12 @@
       <div class="navbar-inner">
         <!-- Brand -->
         <div class="nav-brand">
-          <img src="logo.jpg" alt="UBON WATCH Logo" class="brand-logo-img" style="width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid rgba(244,114,182,0.6); box-shadow:0 2px 10px rgba(0,0,0,0.15); background:#fff; flex-shrink:0;">
+          <div class="brand-icon">
+            <i data-lucide="waves"></i>
+          </div>
           <div class="brand-text">
-            <h1>UBON WATCH <span style="color:#f472b6;">: อุบลช่วยกัน</span></h1>
-            <p class="subtitle">ระบบเตือนภัยน้ำท่วม & ปริมาณฝน • ข้อมูล Real-time</p>
+            <h1>UBONWATCH <span>- ระบบเตือนภัยน้ำ</span></h1>
+            <p class="subtitle">ข้อมูล Real-time • อัปเดตทุก 5 นาที</p>
           </div>
         </div>
 
@@ -735,7 +737,7 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=2"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

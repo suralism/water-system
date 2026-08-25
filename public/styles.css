@@ -1747,6 +1747,19 @@ body {
 .leader-val.danger { color: var(--danger); }
 .leader-val.rain   { color: var(--rain-color); }
 
+.leader-val .trend-up,
+.sw-m-val .trend-up {
+  color: #dc2626;
+  font-size: 0.75em;
+  margin-right: 1px;
+}
+.leader-val .trend-down,
+.sw-m-val .trend-down {
+  color: #16a34a;
+  font-size: 0.75em;
+  margin-right: 1px;
+}
+
 .leader-sub {
   font-size: 0.67rem;
   color: var(--text-muted);

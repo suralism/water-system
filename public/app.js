@@ -56,6 +56,9 @@ let currentTheme = localStorage.getItem("ubon_theme") || "light";
 let soundEnabled = localStorage.getItem("ubon_sound") === "true";
 let audioCtx = null;
 
+// เก็บค่าระดับน้ำครั้งก่อน เพื่อเปรียบเทียบแนวโน้ม (น้ำขึ้น/ลง)
+let previousWaterLevels = new Map(); // Map<stationId, waterlevelMsl>
+
 // Auto Refresh Timer (5 นาที)
 const REFRESH_INTERVAL_SEC = 300;
 let remainingSeconds = REFRESH_INTERVAL_SEC;
@@ -88,6 +91,48 @@ function formatFreeboard(val, options = {}) {
     return options.returnObject
       ? { num: formattedNum, unit: "ม.", val: m }
       : `${formattedNum} ม.`;
+  }
+}
+
+/**
+ * คืนค่าลูกศรแนวโน้มน้ำ เทียบกับค่าที่วัดได้ครั้งก่อน:
+ * - waterlevelMsl เพิ่มขึ้น (น้ำสูงขึ้น) → ▲ (rising)
+ * - waterlevelMsl ลดลง (น้ำลดลง)    → ▼ (falling)
+ * - ไม่เปลี่ยนแปลง / ไม่มีค่าก่อนหน้า → "" (ไม่แสดง)
+ */
+function getTrendArrow(stationId, currentMsl) {
+  if (currentMsl === null || currentMsl === undefined) return { arrow: "", cssClass: "" };
+  const prevMsl = previousWaterLevels.get(stationId);
+  if (prevMsl === undefined || prevMsl === null) return { arrow: "", cssClass: "" };
+  const diff = currentMsl - prevMsl;
+  const threshold = 0.005;
+  if (diff > threshold) return { arrow: "▲", cssClass: "trend-up" };
+  if (diff < -threshold) return { arrow: "▼", cssClass: "trend-down" };
+  return { arrow: "", cssClass: "" };
+}
+
+/**
+ * จัดรูปแบบ freeboard พร้อมลูกศรแนวโน้มน้ำ
+ * แทนเครื่องหมาย + ด้วย ▲/▼ ตามแนวโน้ม
+ */
+function formatFreeboardWithTrend(freeboardM, stationId, currentMsl) {
+  if (freeboardM === null || freeboardM === undefined || isNaN(freeboardM)) return "-";
+  const num = Number(freeboardM);
+  const abs = Math.abs(num);
+  const trend = getTrendArrow(stationId, currentMsl);
+
+  if (abs < 1.0) {
+    const cm = Math.round(abs * 100);
+    if (trend.arrow) {
+      return `<span class="${trend.cssClass}">${trend.arrow}</span>${cm} ซม.`;
+    }
+    return `${cm} ซม.`;
+  } else {
+    const m = abs.toFixed(2);
+    if (trend.arrow) {
+      return `<span class="${trend.cssClass}">${trend.arrow}</span>${m} ม.`;
+    }
+    return `${m} ม.`;
   }
 }
 
@@ -218,6 +263,15 @@ async function loadAllData() {
     ]);
 
     if (waterLevelsRes && waterLevelsRes.success) {
+      // เก็บค่าเดิมไว้ก่อนอัปเดต เพื่อเปรียบเทียบแนวโน้มน้ำ
+      if (allWaterLevels.length > 0) {
+        previousWaterLevels = new Map();
+        for (const w of allWaterLevels) {
+          if (w.waterlevelMsl !== null) {
+            previousWaterLevels.set(w.station.id, w.waterlevelMsl);
+          }
+        }
+      }
       allWaterLevels = waterLevelsRes.data || [];
     }
     if (rainfallsRes && rainfallsRes.success) {
@@ -581,6 +635,8 @@ function updateLeaderboards() {
     const isOverflow = type === "overflow";
     const st = item.station;
     const fbText = formatFreeboard(item.freeboardM, { absOnly: true });
+    const trend = getTrendArrow(st.id, item.waterlevelMsl);
+    const trendHtml = trend.arrow ? `<span class="${trend.cssClass}">${trend.arrow}</span> ` : "";
     
     let statusText = "";
     if (isOverflow) {
@@ -610,7 +666,7 @@ function updateLeaderboards() {
         <div class="sw-metrics-row">
           <div class="sw-metric-item">
             <span class="sw-m-label">ระดับน้ำจริง</span>
-            <span class="sw-m-val blue">${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"}</span>
+            <span class="sw-m-val blue">${trendHtml}${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"}</span>
           </div>
           <div class="sw-metric-item">
             <span class="sw-m-label">ระดับตลิ่ง</span>
@@ -665,7 +721,7 @@ function updateLeaderboards() {
       </div>
     `;
     html += normalList.map((item) => {
-      const freeboardStr = formatFreeboard(item.freeboardM, { withSign: true });
+      const freeboardStr = formatFreeboardWithTrend(item.freeboardM, item.station.id, item.waterlevelMsl);
       return `
         <div class="leader-item" onclick="focusStationOnMap(${item.station.id})">
           <div class="leader-meta">
