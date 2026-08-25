@@ -43,3 +43,7 @@ coverage/
 .wrangler/
 .dev.vars
 .mf/
+
+# Tooling & Scans
+.mimosa/
+

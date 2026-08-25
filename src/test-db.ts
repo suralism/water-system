@@ -60,10 +60,6 @@ class MockD1Database implements D1Database {
     return results;
   }
 
-  async exec(query: string) {
-    return { count: 0, duration: 0 };
-  }
-
   private executeSql(query: string, values: unknown[]) {
     const q = query.trim().toUpperCase();
     if (q.startsWith("INSERT INTO STATIONS")) {
