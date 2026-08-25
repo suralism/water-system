@@ -34,7 +34,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
 </head>
 <body>
   <div class="app-layout">
@@ -653,9 +653,10 @@
               <h3>กราฟระดับน้ำย้อนหลัง เทียบระดับตลิ่ง</h3>
             </div>
             <div class="graph-range-picker">
-              <button class="btn-range active" data-days="1">24 ชม.</button>
-              <button class="btn-range" data-days="2">48 ชม.</button>
+              <button class="btn-range active" data-days="1">24 ชั่วโมง</button>
               <button class="btn-range" data-days="3">3 วัน</button>
+              <button class="btn-range" data-days="7">7 วัน</button>
+              <button class="btn-range" data-days="15">15 วัน</button>
             </div>
           </div>
           <div class="chart-canvas-wrapper">
@@ -737,7 +738,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=2"></script>
+  <script src="app.js?v=3"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();
