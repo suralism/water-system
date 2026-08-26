@@ -12,6 +12,19 @@ export const API_WATER_LEVEL = "https://api-v3.thaiwater.net/api/v1/thaiwater30/
 export const API_RAINFALL_24H = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/rain_24h";
 export const API_WATER_LEVEL_GRAPH = "https://api-v3.thaiwater.net/api/v1/thaiwater30/public/waterlevel_graph";
 
+export const UBON_PROVINCE_CODE = "34";
+
+// ค่าคงที่สำหรับระบบ Deduplication สถานี
+const DEDUPE_DISTANCE_THRESHOLD_M = 100;
+const EXACT_MATCH_DISTANCE_M = 1.0;
+const STATION_ID_LEGACY_THRESHOLD = 10_000_000;
+
+// score multipliers สำหรับเปรียบเทียบความสมบูรณ์ของข้อมูลสถานี
+const SCORE_HAS_BANK = 1e11;
+const SCORE_HAS_LEVEL = 1e10;
+const SCORE_HAS_RAIN = 1e10;
+const SCORE_LEGACY_ID = 1e9;
+
 /**
  * แปลง String เวลาท้องถิ่นไทย (เช่น "2026-08-21 09:00") เป็น ISO-8601 UTC String
  * โดยกำหนด Timezone offset +07:00 เสมอ
@@ -19,7 +32,6 @@ export const API_WATER_LEVEL_GRAPH = "https://api-v3.thaiwater.net/api/v1/thaiwa
 export function toIso(dateStr: unknown): string | null {
   if (typeof dateStr !== "string" || !dateStr.trim()) return null;
   const trimmed = dateStr.trim();
-  // จัดการรูปแบบที่มีหรือไม่มี T และการใส่ +07:00
   const formatted = trimmed.includes("T") ? trimmed : trimmed.replace(" ", "T");
   const withOffset =
     formatted.includes("+") || formatted.endsWith("Z")
@@ -64,8 +76,6 @@ function parseStationRef(item: any): StationRef | null {
   };
 }
 
-export const UBON_PROVINCE_CODE = "34";
-
 /**
  * คำนวณระยะห่างระหว่างพิกัด GPS 2 จุด (หน่วยเป็นเมตร)
  */
@@ -84,136 +94,131 @@ export function normalizeStationName(name: string | null | undefined): string {
 }
 
 /**
- * ให้คะแนน Record เพื่อเลือก Record ที่สมบูรณ์และสดใหม่ที่สุดเมื่อพบสถานีซ้ำซ้อน
+ * ตรวจสอบว่า Record สองตัวเป็นสถานีเดียวกันหรือไม่
+ * โดยใช้เกณฑ์ ID เดียวกัน หรือ ระยะห่าง < 100 ม. + ชื่อ/รหัสตรงกัน
  */
-function scoreWaterLevelRecord(item: WaterLevelRecord): number {
-  let score = 0;
-  // 1. ความสดใหม่ของข้อมูลเวลา (เวลาใหม่กว่าได้คะแนนสูงกว่า)
-  const timeMs = item.observedAt ? Date.parse(item.observedAt) : 0;
-  if (Number.isFinite(timeMs)) {
-    score += timeMs;
-  }
-  // 2. มีค่าระดับตลิ่ง (minBankMsl) ที่ถูกต้อง (> 0)
-  if (item.minBankMsl !== null && item.minBankMsl > 0) {
-    score += 1e11;
-  }
-  // 3. มีค่าระดับน้ำปัจจุบัน (waterlevelMsl)
-  if (item.waterlevelMsl !== null) {
-    score += 1e10;
-  }
-  // 4. ให้ความสำคัญกับ ID หลักของสถานีโทรมาตรเดิม (ID < 10,000,000) มากกว่า feed ย้ายระบบ (11688xxx)
-  if (item.station.id < 10000000) {
-    score += 1e9;
-  }
-  return score;
-}
-
-function scoreRainfallRecord(item: RainfallRecord): number {
-  let score = 0;
-  const timeMs = item.observedAt ? Date.parse(item.observedAt) : 0;
-  if (Number.isFinite(timeMs)) {
-    score += timeMs;
-  }
-  if (item.rain24h !== null) {
-    score += 1e10;
-  }
-  if (item.station.id < 10000000) {
-    score += 1e9;
-  }
-  return score;
+function isSameStation(
+  aId: number, aLat: number, aLon: number, aName: string, aCode: string,
+  bId: number, bLat: number, bLon: number, bName: string, bCode: string
+): boolean {
+  if (aId === bId) return true;
+  const distM = getGpsDistanceM(aLat, aLon, bLat, bLon);
+  if (distM >= DEDUPE_DISTANCE_THRESHOLD_M) return false;
+  const sameName = Boolean(aName && bName && (aName === bName || aName.includes(bName) || bName.includes(aName)));
+  const sameCode = Boolean(aCode && bCode && aCode === bCode);
+  return sameName || sameCode || distM < EXACT_MATCH_DISTANCE_M;
 }
 
 /**
- * ตัดความซ้ำซ้อนของสถานีระดับน้ำ (Water Level Data Deduplication)
- * - กำจัดสถานีที่ส่ง feed ซ้ำ (เช่น รหัส M.7 กับ ridhydro_M.7 หรือ ID ซ้ำ)
- * - เลือกรักษาข้อมูลสถานีที่สมบูรณ์และเป็นปัจจุบันที่สุด (Latest + Valid minBankMsl)
+ * Generic helper: จับกลุ่มสถานีที่ซ้ำซ้อนและคัดเลือก Record ที่ดีที่สุดจากแต่ละกลุ่ม
+ * ทำงานกับทั้ง WaterLevelRecord และ RainfallRecord โดยรับ callback สำหรับดึงค่า station ref
  */
-export function deduplicateWaterLevelRecords(records: WaterLevelRecord[]): WaterLevelRecord[] {
-  const result: WaterLevelRecord[] = [];
+function clusterAndDeduplicate<T>(
+  records: T[],
+  getStation: (r: T) => StationRef,
+  scoreFn: (r: T) => number
+): T[] {
+  const result: T[] = [];
   const visited = new Set<number>();
 
   for (let i = 0; i < records.length; i++) {
     if (visited.has(i)) continue;
-    const cluster: WaterLevelRecord[] = [records[i]];
+    const cluster: T[] = [records[i]];
     visited.add(i);
 
     const a = records[i];
-    const nameA = normalizeStationName(a.station.nameTh);
-    const codeA = (a.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
+    const sa = getStation(a);
+    const nameA = normalizeStationName(sa.nameTh);
+    const codeA = (sa.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
 
     for (let j = i + 1; j < records.length; j++) {
       if (visited.has(j)) continue;
       const b = records[j];
+      const sb = getStation(b);
+      const nameB = normalizeStationName(sb.nameTh);
+      const codeB = (sb.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
 
-      const isSameId = a.station.id === b.station.id;
-      const distM = getGpsDistanceM(a.station.lat, a.station.lon, b.station.lat, b.station.lon);
-
-      const nameB = normalizeStationName(b.station.nameTh);
-      const codeB = (b.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
-
-      const isSameName = Boolean(
-        nameA && nameB && (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA))
-      );
-      const isSameCode = Boolean(codeA && codeB && codeA === codeB);
-
-      // กรองว่าเป็นสถานีเดียวกันหาก:
-      // 1. ID เดียวกัน
-      // 2. ระยะห่าง < 100 เมตร และ (ชื่อตรงกัน หรือ รหัสโทรมาตรตรงกัน หรือ ระยะห่าง < 1.0 เมตร)
-      if (isSameId || (distM < 100 && (isSameName || isSameCode || distM < 1.0))) {
+      if (isSameStation(sa.id, sa.lat, sa.lon, nameA, codeA, sb.id, sb.lat, sb.lon, nameB, codeB)) {
         cluster.push(b);
         visited.add(j);
       }
     }
 
-    cluster.sort((x, y) => scoreWaterLevelRecord(y) - scoreWaterLevelRecord(x));
+    cluster.sort((x, y) => scoreFn(y) - scoreFn(x));
     result.push(cluster[0]);
   }
 
   return result;
+}
+
+/**
+ * ให้คะแนน WaterLevelRecord เพื่อเลือก Record ที่สมบูรณ์และสดใหม่ที่สุด
+ */
+function scoreWaterLevelRecord(item: WaterLevelRecord): number {
+  let score = 0;
+  const timeMs = item.observedAt ? Date.parse(item.observedAt) : 0;
+  if (Number.isFinite(timeMs)) score += timeMs;
+  if (item.minBankMsl !== null && item.minBankMsl > 0) score += SCORE_HAS_BANK;
+  if (item.waterlevelMsl !== null) score += SCORE_HAS_LEVEL;
+  if (item.station.id < STATION_ID_LEGACY_THRESHOLD) score += SCORE_LEGACY_ID;
+  return score;
+}
+
+/**
+ * ให้คะแนน RainfallRecord เพื่อเลือก Record ที่สมบูรณ์และสดใหม่ที่สุด
+ */
+function scoreRainfallRecord(item: RainfallRecord): number {
+  let score = 0;
+  const timeMs = item.observedAt ? Date.parse(item.observedAt) : 0;
+  if (Number.isFinite(timeMs)) score += timeMs;
+  if (item.rain24h !== null) score += SCORE_HAS_RAIN;
+  if (item.station.id < STATION_ID_LEGACY_THRESHOLD) score += SCORE_LEGACY_ID;
+  return score;
+}
+
+/**
+ * ตัดความซ้ำซ้อนของสถานีระดับน้ำ (Water Level Data Deduplication)
+ */
+export function deduplicateWaterLevelRecords(records: WaterLevelRecord[]): WaterLevelRecord[] {
+  return clusterAndDeduplicate(records, (r) => r.station, scoreWaterLevelRecord);
 }
 
 /**
  * ตัดความซ้ำซ้อนของสถานีวัดปริมาณน้ำฝน (Rainfall Data Deduplication)
  */
 export function deduplicateRainfallRecords(records: RainfallRecord[]): RainfallRecord[] {
-  const result: RainfallRecord[] = [];
-  const visited = new Set<number>();
+  return clusterAndDeduplicate(records, (r) => r.station, scoreRainfallRecord);
+}
 
-  for (let i = 0; i < records.length; i++) {
-    if (visited.has(i)) continue;
-    const cluster: RainfallRecord[] = [records[i]];
-    visited.add(i);
+/**
+ * Helper: เรียก HTTP API ด้วย AbortController + User-Agent headers
+ */
+async function fetchJson(
+  url: string,
+  options: ThaiWaterClientOptions
+): Promise<any> {
+  const fetchImpl = options.fetchFn ?? fetch;
+  const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
 
-    const a = records[i];
-    const nameA = normalizeStationName(a.station.nameTh);
-    const codeA = (a.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
+  const controller = new AbortController();
+  const timeoutId = options.timeoutMs
+    ? setTimeout(() => controller.abort(), options.timeoutMs)
+    : null;
 
-    for (let j = i + 1; j < records.length; j++) {
-      if (visited.has(j)) continue;
-      const b = records[j];
-
-      const isSameId = a.station.id === b.station.id;
-      const distM = getGpsDistanceM(a.station.lat, a.station.lon, b.station.lat, b.station.lon);
-
-      const nameB = normalizeStationName(b.station.nameTh);
-      const codeB = (b.station.oldcode || "").replace(/^ridhydro_/i, "").trim().toLowerCase();
-
-      const isSameName = Boolean(
-        nameA && nameB && (nameA === nameB || nameA.includes(nameB) || nameB.includes(nameA))
-      );
-      const isSameCode = Boolean(codeA && codeB && codeA === codeB);
-
-      if (isSameId || (distM < 100 && (isSameName || isSameCode || distM < 1.0))) {
-        cluster.push(b);
-        visited.add(j);
-      }
+  try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (typeof navigator === "undefined" && userAgent) {
+      headers["User-Agent"] = userAgent;
     }
 
-    cluster.sort((x, y) => scoreRainfallRecord(y) - scoreRainfallRecord(x));
-    result.push(cluster[0]);
+    const res = await fetchImpl(url, { method: "GET", headers, signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`Fetch failed [${url}] status: ${res.status} ${res.statusText}`);
+    }
+    return await res.json();
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
-
-  return result;
 }
 
 /**
@@ -222,80 +227,45 @@ export function deduplicateRainfallRecords(records: RainfallRecord[]): RainfallR
 export async function fetchWaterLevel(
   options: ThaiWaterClientOptions & { targetProvinceCode?: string | null } = {}
 ): Promise<WaterLevelRecord[]> {
-  const fetchImpl = options.fetchFn ?? fetch;
-  const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
   const targetProvince = options.targetProvinceCode !== undefined ? options.targetProvinceCode : UBON_PROVINCE_CODE;
   const shouldDeduplicate = options.deduplicate ?? true;
 
-  const controller = new AbortController();
-  const timeoutId = options.timeoutMs
-    ? setTimeout(() => controller.abort(), options.timeoutMs)
-    : null;
+  const body = await fetchJson(API_WATER_LEVEL, options);
+  const rawList = body?.waterlevel_data?.data ?? [];
+  const results: WaterLevelRecord[] = [];
 
-  try {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (typeof navigator === "undefined" && userAgent) {
-      headers["User-Agent"] = userAgent;
-    }
+  for (const item of rawList) {
+    const rawProv = item.geocode?.province_code ?? item.station?.province_code;
+    const provCode = rawProv != null ? String(rawProv).padStart(2, "0") : null;
+    if (targetProvince && provCode !== targetProvince) continue;
 
-    const res = await fetchImpl(API_WATER_LEVEL, {
-      method: "GET",
-      headers,
-      signal: controller.signal,
-    });
+    const station = parseStationRef(item);
+    if (!station) continue;
 
-    if (!res.ok) {
-      throw new Error(`Fetch waterlevel failed with status: ${res.status} ${res.statusText}`);
-    }
+    const rawMinBank = Number(item.station?.min_bank ?? item.min_bank);
+    const minBankMsl = Number.isFinite(rawMinBank) && rawMinBank > 0 ? rawMinBank : null;
+    const waterlevelMsl = Number.isFinite(Number(item.waterlevel_msl))
+      ? Number(item.waterlevel_msl)
+      : null;
 
-    const body: any = await res.json();
-    const rawList = body?.waterlevel_data?.data ?? [];
-    const results: WaterLevelRecord[] = [];
-
-    for (const item of rawList) {
-      // ตรวจสอบรหัสจังหวัดก่อน เพื่อลดภาระการประมวลผลทันที
-      const rawProv = item.geocode?.province_code ?? item.station?.province_code;
-      const provCode = rawProv != null ? String(rawProv).padStart(2, "0") : null;
-      if (targetProvince && provCode !== targetProvince) {
-        continue; // ข้ามข้อมูลจังหวัดอื่นทั้งหมด
-      }
-
-      const station = parseStationRef(item);
-      if (!station) continue;
-
-      const rawMinBank = Number(item.station?.min_bank ?? item.min_bank);
-      const minBankMsl = Number.isFinite(rawMinBank) && rawMinBank > 0 ? rawMinBank : null;
-      const waterlevelMsl = Number.isFinite(Number(item.waterlevel_msl))
-        ? Number(item.waterlevel_msl)
+    const freeboardM =
+      waterlevelMsl !== null && minBankMsl !== null
+        ? Math.round((minBankMsl - waterlevelMsl) * 1000) / 1000
         : null;
 
-      const freeboardM =
-        waterlevelMsl !== null && minBankMsl !== null
-          ? Math.round((minBankMsl - waterlevelMsl) * 1000) / 1000
-          : null;
-
-      results.push({
-        station,
-        waterlevelMsl,
-        waterlevelLocalM: Number.isFinite(Number(item.waterlevel_m))
-          ? Number(item.waterlevel_m)
-          : null,
-        minBankMsl,
-        freeboardM,
-        situationLevel: Number.isFinite(Number(item.situation_level))
-          ? Number(item.situation_level)
-          : null,
-        storagePercent: Number.isFinite(Number(item.storage_percent))
-          ? Number(item.storage_percent)
-          : null,
-        observedAt: toIso(item.waterlevel_datetime),
-      });
-    }
-
-    return shouldDeduplicate ? deduplicateWaterLevelRecords(results) : results;
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+    results.push({
+      station,
+      waterlevelMsl,
+      waterlevelLocalM: Number.isFinite(Number(item.waterlevel_m)) ? Number(item.waterlevel_m) : null,
+      minBankMsl,
+      freeboardM,
+      situationLevel: Number.isFinite(Number(item.situation_level)) ? Number(item.situation_level) : null,
+      storagePercent: Number.isFinite(Number(item.storage_percent)) ? Number(item.storage_percent) : null,
+      observedAt: toIso(item.waterlevel_datetime),
+    });
   }
+
+  return shouldDeduplicate ? deduplicateWaterLevelRecords(results) : results;
 }
 
 /**
@@ -304,59 +274,30 @@ export async function fetchWaterLevel(
 export async function fetchRainfall(
   options: ThaiWaterClientOptions & { targetProvinceCode?: string | null } = {}
 ): Promise<RainfallRecord[]> {
-  const fetchImpl = options.fetchFn ?? fetch;
-  const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
   const targetProvince = options.targetProvinceCode !== undefined ? options.targetProvinceCode : UBON_PROVINCE_CODE;
   const shouldDeduplicate = options.deduplicate ?? true;
 
-  const controller = new AbortController();
-  const timeoutId = options.timeoutMs
-    ? setTimeout(() => controller.abort(), options.timeoutMs)
-    : null;
+  const body = await fetchJson(API_RAINFALL_24H, options);
+  const rawList = body?.data ?? [];
+  const results: RainfallRecord[] = [];
 
-  try {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (typeof navigator === "undefined" && userAgent) {
-      headers["User-Agent"] = userAgent;
-    }
+  for (const item of rawList) {
+    const rawProv = item.geocode?.province_code ?? item.station?.province_code;
+    const provCode = rawProv != null ? String(rawProv).padStart(2, "0") : null;
+    if (targetProvince && provCode !== targetProvince) continue;
 
-    const res = await fetchImpl(API_RAINFALL_24H, {
-      method: "GET",
-      headers,
-      signal: controller.signal,
+    const station = parseStationRef(item);
+    if (!station) continue;
+
+    results.push({
+      station,
+      rain24h: Number.isFinite(Number(item.rain_24h)) ? Number(item.rain_24h) : null,
+      rain1h: Number.isFinite(Number(item.rain_1h)) ? Number(item.rain_1h) : null,
+      observedAt: toIso(item.rainfall_datetime),
     });
-
-    if (!res.ok) {
-      throw new Error(`Fetch rainfall failed with status: ${res.status} ${res.statusText}`);
-    }
-
-    const body: any = await res.json();
-    const rawList = body?.data ?? [];
-    const results: RainfallRecord[] = [];
-
-    for (const item of rawList) {
-      // ตรวจสอบรหัสจังหวัดก่อน
-      const rawProv = item.geocode?.province_code ?? item.station?.province_code;
-      const provCode = rawProv != null ? String(rawProv).padStart(2, "0") : null;
-      if (targetProvince && provCode !== targetProvince) {
-        continue; // ข้ามข้อมูลจังหวัดอื่นทั้งหมด
-      }
-
-      const station = parseStationRef(item);
-      if (!station) continue;
-
-      results.push({
-        station,
-        rain24h: Number.isFinite(Number(item.rain_24h)) ? Number(item.rain_24h) : null,
-        rain1h: Number.isFinite(Number(item.rain_1h)) ? Number(item.rain_1h) : null,
-        observedAt: toIso(item.rainfall_datetime),
-      });
-    }
-
-    return shouldDeduplicate ? deduplicateRainfallRecords(results) : results;
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
   }
+
+  return shouldDeduplicate ? deduplicateRainfallRecords(results) : results;
 }
 
 export interface WaterLevelGraphParams {
@@ -373,11 +314,7 @@ export async function fetchWaterLevelGraph(
   params: WaterLevelGraphParams,
   options: ThaiWaterClientOptions = {}
 ): Promise<WaterLevelGraphResult> {
-  const fetchImpl = options.fetchFn ?? fetch;
-  const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
-
   const stationIdStr = String(params.stationId);
-  // ใช้ %20 สำหรับช่องว่างใน end_date เพื่อความถูกต้องตามข้อกำหนดของ ThaiWater API
   const cleanStartDate = encodeURIComponent(params.startDate.trim());
   const cleanEndDate = params.endDate.trim().replace(/ /g, "%20");
 
@@ -389,80 +326,45 @@ export async function fetchWaterLevelGraph(
   ].join("&");
 
   const url = `${API_WATER_LEVEL_GRAPH}?${query}`;
+  const body = await fetchJson(url, options);
+  const dataObj = body?.data ?? {};
+  const rawPoints = dataObj.graph_data ?? [];
+  const points: WaterLevelGraphPoint[] = [];
 
-  const controller = new AbortController();
-  const timeoutId = options.timeoutMs
-    ? setTimeout(() => controller.abort(), options.timeoutMs)
-    : null;
+  for (const pt of rawPoints) {
+    const datetimeStr = pt.datetime ?? pt.waterlevel_datetime;
+    const rawVal = pt.value !== undefined ? pt.value : pt.waterlevel_msl;
+    const waterlevelMsl =
+      rawVal !== null && Number.isFinite(Number(rawVal)) ? Number(rawVal) : null;
 
-  try {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    if (typeof navigator === "undefined" && userAgent) {
-      headers["User-Agent"] = userAgent;
-    }
+    const rawLocalM = pt.waterlevel_m ?? pt.value_out;
+    const waterlevelLocalM =
+      rawLocalM !== null && Number.isFinite(Number(rawLocalM)) ? Number(rawLocalM) : null;
 
-    const res = await fetchImpl(url, {
-      method: "GET",
-      headers,
-      signal: controller.signal,
+    const discharge =
+      pt.discharge !== null && Number.isFinite(Number(pt.discharge)) ? Number(pt.discharge) : null;
+
+    points.push({
+      observedAt: toIso(datetimeStr),
+      waterlevelMsl,
+      waterlevelLocalM,
+      discharge,
+      situationLevel: Number.isFinite(Number(pt.situation_level)) ? Number(pt.situation_level) : null,
+      rawDatetime: datetimeStr,
     });
-
-    if (!res.ok) {
-      throw new Error(`Fetch waterlevel graph failed with status: ${res.status} ${res.statusText}`);
-    }
-
-    const body: any = await res.json();
-    const dataObj = body?.data ?? {};
-    const rawPoints = dataObj.graph_data ?? [];
-    const points: WaterLevelGraphPoint[] = [];
-
-    for (const pt of rawPoints) {
-      const datetimeStr = pt.datetime ?? pt.waterlevel_datetime;
-      const rawVal = pt.value !== undefined ? pt.value : pt.waterlevel_msl;
-      const waterlevelMsl =
-        rawVal !== null && Number.isFinite(Number(rawVal))
-          ? Number(rawVal)
-          : null;
-
-      const rawLocalM = pt.waterlevel_m ?? pt.value_out;
-      const waterlevelLocalM =
-        rawLocalM !== null && Number.isFinite(Number(rawLocalM))
-          ? Number(rawLocalM)
-          : null;
-
-      const discharge =
-        pt.discharge !== null && Number.isFinite(Number(pt.discharge))
-          ? Number(pt.discharge)
-          : null;
-
-      points.push({
-        observedAt: toIso(datetimeStr),
-        waterlevelMsl,
-        waterlevelLocalM,
-        discharge,
-        situationLevel: Number.isFinite(Number(pt.situation_level))
-          ? Number(pt.situation_level)
-          : null,
-        rawDatetime: datetimeStr,
-      });
-    }
-
-    const parseNum = (v: any) =>
-      v !== null && Number.isFinite(Number(v)) && Number(v) > 0
-        ? Number(v)
-        : null;
-
-    return {
-      stationId: Number(params.stationId),
-      startDate: params.startDate,
-      endDate: params.endDate,
-      minBankMsl: parseNum(dataObj.min_bank),
-      warningLevelMsl: parseNum(dataObj.warning_level),
-      criticalLevelMsl: parseNum(dataObj.critical_level),
-      groundLevelMsl: parseNum(dataObj.ground_level),
-      points,
-    };
-  } finally {
-    if (timeoutId) clearTimeout(timeoutId);
   }
+
+  const parsePositiveNum = (v: any) =>
+    v !== null && Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : null;
+
+  return {
+    stationId: Number(params.stationId),
+    startDate: params.startDate,
+    endDate: params.endDate,
+    minBankMsl: parsePositiveNum(dataObj.min_bank),
+    warningLevelMsl: parsePositiveNum(dataObj.warning_level),
+    criticalLevelMsl: parsePositiveNum(dataObj.critical_level),
+    groundLevelMsl: parsePositiveNum(dataObj.ground_level),
+    points,
+  };
 }

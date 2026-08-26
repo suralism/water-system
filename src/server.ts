@@ -3,6 +3,7 @@ import cors from "cors";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ThaiWaterService } from "./cache-service.js";
+import { WaterLevelRecord, RainfallRecord } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,31 +25,86 @@ const thaiWaterService = new ThaiWaterService({
 const publicDir = path.resolve(__dirname, "../public");
 app.use(express.static(publicDir));
 
+// ----- Filter Helpers -----
+
+function filterOutWaterStations(rainfalls: RainfallRecord[], waterIds: Set<number>): RainfallRecord[] {
+  return rainfalls.filter((r) => !waterIds.has(r.station.id));
+}
+
+function filterByAmphoe<T extends { station: { amphoeNameTh?: string | null } }>(
+  list: T[],
+  amphoe: unknown
+): T[] {
+  if (typeof amphoe !== "string" || !amphoe.trim()) return list;
+  const name = amphoe.trim();
+  return list.filter((item) => item.station.amphoeNameTh === name);
+}
+
+function filterBySearch<T extends { station: { nameTh?: string | null; nameEn?: string | null; amphoeNameTh?: string | null; basinNameTh?: string | null; id: number } }>(
+  list: T[],
+  search: unknown
+): T[] {
+  if (typeof search !== "string" || !search.trim()) return list;
+  const q = search.trim().toLowerCase();
+  return list.filter(
+    (item) =>
+      item.station.nameTh?.toLowerCase().includes(q) ||
+      item.station.nameEn?.toLowerCase().includes(q) ||
+      item.station.amphoeNameTh?.toLowerCase().includes(q) ||
+      item.station.basinNameTh?.toLowerCase().includes(q) ||
+      String(item.station.id).includes(q)
+  );
+}
+
+function filterWaterByStatus(
+  list: WaterLevelRecord[],
+  status: unknown
+): WaterLevelRecord[] {
+  if (typeof status !== "string" || !status.trim()) return list;
+  if (status === "overflow") {
+    return list.filter((item) => item.freeboardM !== null && item.freeboardM < 0);
+  }
+  if (status === "warning") {
+    return list.filter(
+      (item) =>
+        (item.freeboardM !== null && item.freeboardM >= 0 && item.freeboardM <= 0.5) ||
+        (item.situationLevel !== null && item.situationLevel >= 4)
+    );
+  }
+  if (status === "normal") {
+    return list.filter(
+      (item) =>
+        (item.freeboardM === null || item.freeboardM > 0.5) &&
+        (item.situationLevel === null || item.situationLevel < 4)
+    );
+  }
+  return list;
+}
+
+function applyLimit<T>(list: T[], limit: unknown): T[] {
+  const n = Number(limit);
+  return n > 0 ? list.slice(0, n) : list;
+}
+
 /**
  * 1. API: สรุปภาพรวมและสถิติสำคัญ จ.อุบลราชธานี (KPIs / Summary)
  */
 app.get("/api/summary", async (req, res) => {
   try {
-    const { amphoe } = req.query;
     let [waterLevels, rawRainfalls] = await Promise.all([
       thaiWaterService.getWaterLevel(),
       thaiWaterService.getRainfall(),
     ]);
 
-    // กรองสถานีน้ำฝนที่ซ้ำกับ water-level ออก
     const waterIds = new Set(waterLevels.map((w) => w.station.id));
-    let rainfalls = rawRainfalls.filter((r) => !waterIds.has(r.station.id));
+    let rainfalls = filterOutWaterStations(rawRainfalls, waterIds);
 
-    if (amphoe && typeof amphoe === "string") {
-      const aName = amphoe.trim();
-      waterLevels = waterLevels.filter((item) => item.station.amphoeNameTh === aName);
-      rainfalls = rainfalls.filter((item) => item.station.amphoeNameTh === aName);
-    }
+    waterLevels = filterByAmphoe(waterLevels, req.query.amphoe);
+    rainfalls = filterByAmphoe(rainfalls, req.query.amphoe);
 
-    // คำนวณสถิติระดับน้ำ
     let overflowCount = 0;
     let warningCount = 0;
-    const overflowingStations = [];
+    const overflowingStations: WaterLevelRecord[] = [];
 
     for (const item of waterLevels) {
       if (item.freeboardM !== null && item.freeboardM < 0) {
@@ -62,17 +118,11 @@ app.get("/api/summary", async (req, res) => {
       }
     }
 
-    // เรียงสถานีล้นตลิ่งมากที่สุด (freeboardM ติดลบมากที่สุด)
-    overflowingStations.sort(
-      (a, b) => (a.freeboardM ?? 0) - (b.freeboardM ?? 0)
-    );
+    overflowingStations.sort((a, b) => (a.freeboardM ?? 0) - (b.freeboardM ?? 0));
 
-    // เรียงสถานีฝนตกหนักสุด 24 ชม.
     const sortedRain = [...rainfalls]
       .filter((r) => r.rain24h !== null && r.rain24h > 0)
       .sort((a, b) => (b.rain24h ?? 0) - (a.rain24h ?? 0));
-
-    const cacheStatus = thaiWaterService.getCacheStatus();
 
     res.json({
       success: true,
@@ -86,7 +136,7 @@ app.get("/api/summary", async (req, res) => {
         topOverflowStations: overflowingStations.slice(0, 10),
         topRainStations: sortedRain.slice(0, 10),
         maxRainfall24h: sortedRain[0] ?? null,
-        cacheStatus,
+        cacheStatus: thaiWaterService.getCacheStatus(),
         serverTime: new Date().toISOString(),
       },
     });
@@ -96,52 +146,17 @@ app.get("/api/summary", async (req, res) => {
 });
 
 /**
- * 2. API: รายการระดับน้ำ Snapshot จ.อุบลราชธานี (พร้อม Filter อำเภอ และ สถานะ)
+ * 2. API: รายการระดับน้ำ Snapshot จ.อุบลราชธานี
  */
 app.get("/api/water-levels", async (req, res) => {
   try {
-    const { amphoe, search, status, limit } = req.query;
     let list = await thaiWaterService.getWaterLevel();
-
-    if (amphoe && typeof amphoe === "string" && amphoe.trim()) {
-      const aName = amphoe.trim();
-      list = list.filter((item) => item.station.amphoeNameTh === aName);
-    }
-
-    if (status && typeof status === "string") {
-      if (status === "overflow") {
-        list = list.filter((item) => item.freeboardM !== null && item.freeboardM < 0);
-      } else if (status === "warning") {
-        list = list.filter(
-          (item) =>
-            (item.freeboardM !== null && item.freeboardM >= 0 && item.freeboardM <= 0.5) ||
-            (item.situationLevel !== null && item.situationLevel >= 4)
-        );
-      } else if (status === "normal") {
-        list = list.filter(
-          (item) =>
-            (item.freeboardM === null || item.freeboardM > 0.5) &&
-            (item.situationLevel === null || item.situationLevel < 4)
-        );
-      }
-    }
-
-    if (search && typeof search === "string") {
-      const query = search.trim().toLowerCase();
-      list = list.filter(
-        (item) =>
-          item.station.nameTh?.toLowerCase().includes(query) ||
-          item.station.nameEn?.toLowerCase().includes(query) ||
-          item.station.amphoeNameTh?.toLowerCase().includes(query) ||
-          item.station.basinNameTh?.toLowerCase().includes(query) ||
-          String(item.station.id).includes(query)
-      );
-    }
+    list = filterByAmphoe(list, req.query.amphoe);
+    list = filterWaterByStatus(list, req.query.status);
+    list = filterBySearch(list, req.query.search);
 
     const total = list.length;
-    if (limit && Number(limit) > 0) {
-      list = list.slice(0, Number(limit));
-    }
+    list = applyLimit(list, req.query.limit);
 
     res.json({ success: true, count: list.length, total, data: list });
   } catch (error: any) {
@@ -151,51 +166,28 @@ app.get("/api/water-levels", async (req, res) => {
 
 /**
  * 3. API: รายการน้ำฝน Snapshot จ.อุบลราชธานี
- *    → กรองสถานีที่ซ้ำกับ water-level list ออกอัตโนมัติ
- *      (สถานี Multi-sensor บางแห่งถูก ThaiWater รวมใน API ฝนด้วย เช่น M.7, M.11B)
  */
 app.get("/api/rainfall", async (req, res) => {
   try {
-    const { amphoe, search, minRain, limit } = req.query;
-
-    // ดึงทั้งสองรายการพร้อมกัน แล้วกรองสถานีซ้ำออก
     const [waterLevels, allRain] = await Promise.all([
       thaiWaterService.getWaterLevel(),
       thaiWaterService.getRainfall(),
     ]);
 
-    // สร้าง Set ของ station ID ที่อยู่ใน water-level list
     const waterStationIds = new Set(waterLevels.map((w) => w.station.id));
+    let list = filterOutWaterStations(allRain, waterStationIds);
+    list = filterByAmphoe(list, req.query.amphoe);
 
-    // กรองเฉพาะสถานีวัดฝนที่ไม่ซ้ำกับ water-level stations
-    let list = allRain.filter((item) => !waterStationIds.has(item.station.id));
-
-    if (amphoe && typeof amphoe === "string" && amphoe.trim()) {
-      const aName = amphoe.trim();
-      list = list.filter((item) => item.station.amphoeNameTh === aName);
-    }
-
+    const minRain = req.query.minRain;
     if (minRain && !isNaN(Number(minRain))) {
       const threshold = Number(minRain);
       list = list.filter((item) => (item.rain24h ?? 0) >= threshold);
     }
 
-    if (search && typeof search === "string") {
-      const query = search.trim().toLowerCase();
-      list = list.filter(
-        (item) =>
-          item.station.nameTh?.toLowerCase().includes(query) ||
-          item.station.nameEn?.toLowerCase().includes(query) ||
-          item.station.amphoeNameTh?.toLowerCase().includes(query) ||
-          item.station.basinNameTh?.toLowerCase().includes(query) ||
-          String(item.station.id).includes(query)
-      );
-    }
+    list = filterBySearch(list, req.query.search);
 
     const total = list.length;
-    if (limit && Number(limit) > 0) {
-      list = list.slice(0, Number(limit));
-    }
+    list = applyLimit(list, req.query.limit);
 
     res.json({ success: true, count: list.length, total, data: list });
   } catch (error: any) {
@@ -210,7 +202,8 @@ app.get("/api/map-points", async (req, res) => {
   try {
     const map = await thaiWaterService.getCombinedSnapshot();
     const list = Array.from(map.values()).map((entry) => {
-      const st = entry.waterLevel?.station ?? entry.rainfall?.station!;
+      const st = entry.waterLevel?.station ?? entry.rainfall?.station;
+      if (!st) return null;
       return {
         stationId: entry.stationId,
         nameTh: st.nameTh,
@@ -221,7 +214,6 @@ app.get("/api/map-points", async (req, res) => {
         provinceNameTh: st.provinceNameTh,
         amphoeNameTh: st.amphoeNameTh,
         basinNameTh: st.basinNameTh,
-        // Water Level data
         waterlevelMsl: entry.waterLevel?.waterlevelMsl ?? null,
         waterlevelLocalM: entry.waterLevel?.waterlevelLocalM ?? null,
         minBankMsl: entry.waterLevel?.minBankMsl ?? null,
@@ -229,12 +221,11 @@ app.get("/api/map-points", async (req, res) => {
         situationLevel: entry.waterLevel?.situationLevel ?? null,
         storagePercent: entry.waterLevel?.storagePercent ?? null,
         waterObservedAt: entry.waterLevel?.observedAt ?? null,
-        // Rainfall data
         rain24h: entry.rainfall?.rain24h ?? null,
         rain1h: entry.rainfall?.rain1h ?? null,
         rainObservedAt: entry.rainfall?.observedAt ?? null,
       };
-    });
+    }).filter(Boolean);
 
     res.json({ success: true, count: list.length, data: list });
   } catch (error: any) {
@@ -243,7 +234,7 @@ app.get("/api/map-points", async (req, res) => {
 });
 
 /**
- * 4. API: รายชื่ออำเภอทั้งหมดใน จ.อุบลราชธานี ที่มีสถานีตรวจวัด
+ * 5. API: รายชื่ออำเภอทั้งหมดใน จ.อุบลราชธานี
  */
 app.get("/api/amphoes", async (req, res) => {
   try {
@@ -252,9 +243,8 @@ app.get("/api/amphoes", async (req, res) => {
       thaiWaterService.getRainfall(),
     ]);
 
-    // กรองสถานีน้ำฝนซ้ำออก
     const waterIds = new Set(waterLevels.map((w) => w.station.id));
-    const rainfalls = rawRainfalls.filter((r) => !waterIds.has(r.station.id));
+    const rainfalls = filterOutWaterStations(rawRainfalls, waterIds);
 
     const amphoeSet = new Set<string>();
     for (const w of waterLevels) {
@@ -272,7 +262,7 @@ app.get("/api/amphoes", async (req, res) => {
 });
 
 /**
- * 5. API: ดึง Time-series Graph ของสถานี
+ * 6. API: ดึง Time-series Graph ของสถานี
  */
 app.get("/api/water-levels/graph", async (req, res) => {
   try {
@@ -297,7 +287,7 @@ app.get("/api/water-levels/graph", async (req, res) => {
 });
 
 /**
- * 6. API: บังคับ Refresh ข้อมูลในแคช
+ * 7. API: บังคับ Refresh ข้อมูลในแคช
  */
 app.post("/api/refresh", async (req, res) => {
   try {

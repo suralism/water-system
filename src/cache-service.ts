@@ -12,6 +12,8 @@ import {
   WaterLevelGraphParams,
 } from "./thaiwater.js";
 
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 นาที
+
 interface CacheEntry<T> {
   data: T;
   cachedAt: number;
@@ -41,8 +43,8 @@ export class ThaiWaterService {
     cacheOptions: CacheOptions = {},
     clientOptions: ThaiWaterClientOptions = {}
   ) {
-    this.ttlMs = cacheOptions.ttlMs ?? 5 * 60 * 1000; // 5 นาที
-    this.pollIntervalMs = cacheOptions.pollIntervalMs ?? 5 * 60 * 1000;
+    this.ttlMs = cacheOptions.ttlMs ?? DEFAULT_CACHE_TTL_MS;
+    this.pollIntervalMs = cacheOptions.pollIntervalMs ?? DEFAULT_CACHE_TTL_MS;
     this.clientOptions = clientOptions;
 
     if (cacheOptions.autoStartPolling) {
@@ -51,63 +53,68 @@ export class ThaiWaterService {
   }
 
   /**
-   * ดึงข้อมูลระดับน้ำ (Water Level) โดยใช้ระบบ Cache & Request Deduplication
+   * Helper: ดึงข้อมูลจาก Cache ถ้ายังไม่หมดอายุ หรือดึงสดพร้อม Deduplicate concurrent requests (Single-Flight)
    */
-  async getWaterLevel(forceRefresh = false): Promise<WaterLevelRecord[]> {
+  private async getCachedOrFetch<T>(
+    getCache: () => CacheEntry<T> | null,
+    setCache: (entry: CacheEntry<T>) => void,
+    getPending: () => Promise<T> | null,
+    setPending: (p: Promise<T> | null) => void,
+    fetcher: () => Promise<T>,
+    forceRefresh: boolean
+  ): Promise<T> {
     const now = Date.now();
-    if (
-      !forceRefresh &&
-      this.waterLevelCache &&
-      now - this.waterLevelCache.cachedAt < this.ttlMs
-    ) {
-      return this.waterLevelCache.data;
+    const currentCache = getCache();
+
+    if (!forceRefresh && currentCache && now - currentCache.cachedAt < this.ttlMs) {
+      return currentCache.data;
     }
 
-    if (this.pendingWaterLevelPromise) {
-      return this.pendingWaterLevelPromise;
+    const pending = getPending();
+    if (pending) {
+      return pending;
     }
 
-    this.pendingWaterLevelPromise = (async () => {
+    const fetchPromise = (async () => {
       try {
-        const data = await fetchWaterLevel(this.clientOptions);
-        this.waterLevelCache = { data, cachedAt: Date.now() };
+        const data = await fetcher();
+        setCache({ data, cachedAt: Date.now() });
         return data;
       } finally {
-        this.pendingWaterLevelPromise = null;
+        setPending(null);
       }
     })();
 
-    return this.pendingWaterLevelPromise;
+    setPending(fetchPromise);
+    return fetchPromise;
+  }
+
+  /**
+   * ดึงข้อมูลระดับน้ำ (Water Level) โดยใช้ระบบ Cache & Request Deduplication
+   */
+  async getWaterLevel(forceRefresh = false): Promise<WaterLevelRecord[]> {
+    return this.getCachedOrFetch(
+      () => this.waterLevelCache,
+      (entry) => { this.waterLevelCache = entry; },
+      () => this.pendingWaterLevelPromise,
+      (p) => { this.pendingWaterLevelPromise = p; },
+      () => fetchWaterLevel(this.clientOptions),
+      forceRefresh
+    );
   }
 
   /**
    * ดึงข้อมูลปริมาณน้ำฝน (Rainfall) โดยใช้ระบบ Cache & Request Deduplication
    */
   async getRainfall(forceRefresh = false): Promise<RainfallRecord[]> {
-    const now = Date.now();
-    if (
-      !forceRefresh &&
-      this.rainfallCache &&
-      now - this.rainfallCache.cachedAt < this.ttlMs
-    ) {
-      return this.rainfallCache.data;
-    }
-
-    if (this.pendingRainfallPromise) {
-      return this.pendingRainfallPromise;
-    }
-
-    this.pendingRainfallPromise = (async () => {
-      try {
-        const data = await fetchRainfall(this.clientOptions);
-        this.rainfallCache = { data, cachedAt: Date.now() };
-        return data;
-      } finally {
-        this.pendingRainfallPromise = null;
-      }
-    })();
-
-    return this.pendingRainfallPromise;
+    return this.getCachedOrFetch(
+      () => this.rainfallCache,
+      (entry) => { this.rainfallCache = entry; },
+      () => this.pendingRainfallPromise,
+      (p) => { this.pendingRainfallPromise = p; },
+      () => fetchRainfall(this.clientOptions),
+      forceRefresh
+    );
   }
 
   /**
@@ -128,18 +135,6 @@ export class ThaiWaterService {
     const data = await fetchWaterLevelGraph(params, this.clientOptions);
     this.graphCache.set(cacheKey, { data, cachedAt: Date.now() });
     return data;
-  }
-
-  /**
-   * ดึงข้อมูลสถานีตามรหัสจังหวัด (เช่น "50" สำหรับเชียงใหม่, "10" สำหรับ กทม.)
-   */
-  async getWaterLevelsByProvince(
-    provinceCode: string,
-    forceRefresh = false
-  ): Promise<WaterLevelRecord[]> {
-    const normalized = provinceCode.padStart(2, "0");
-    const list = await this.getWaterLevel(forceRefresh);
-    return list.filter((item) => item.station.provinceCode === normalized);
   }
 
   /**
