@@ -157,17 +157,18 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  // เลเยอร์แผนที่ต่างๆ
+  // เลเยอร์แผนที่ต่างๆ (Stadia Maps / Esri / OpenTopoMap)
+  const STADIA_API_KEY = "aed0453b-4569-49e1-837e-b704bd737a23";
+  const STADIA_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener noreferrer">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>';
+
   baseTileLayers = {
-    voyager: L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> | ThaiWater จ.อุบลราชธานี',
-      maxZoom: 19,
-      subdomains: "abcd",
+    voyager: L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`, {
+      attribution: STADIA_ATTRIBUTION,
+      maxZoom: 20,
     }),
-    dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://carto.com/">CARTO DarkMatter</a> | ThaiWater จ.อุบลราชธานี',
-      maxZoom: 19,
-      subdomains: "abcd",
+    dark: L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`, {
+      attribution: STADIA_ATTRIBUTION,
+      maxZoom: 20,
     }),
     satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
       attribution: 'Tiles &copy; Esri &mdash; HII ThaiWater',
@@ -179,9 +180,8 @@ function initMap() {
     }),
   };
 
-  satelliteLabelsLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png", {
-    subdomains: "abcd",
-    maxZoom: 19,
+  satelliteLabelsLayer = L.tileLayer(`https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`, {
+    maxZoom: 20,
     pane: "shadowPane",
   });
 
