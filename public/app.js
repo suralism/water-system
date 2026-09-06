@@ -168,12 +168,15 @@ function initMap() {
     center: UBON_COORDS,
     zoom: 9.5,
     zoomControl: false,
+    attributionControl: {
+      prefix: false, // ตัดคำว่า "Leaflet |" ออกเพื่อความสะอาดตา
+    },
   });
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  // เลเยอร์แผนที่ต่างๆ (Stadia Maps / Esri / OpenTopoMap)
-  const STADIA_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener noreferrer">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>';
+  // เลเยอร์แผนที่ต่างๆ (เครดิตแบบสั้นกระชับ ไม่รกตา แต่ถูกต้องตาม License)
+  const STADIA_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia</a> &bull; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>';
 
   if (stadiaKey) {
     const stadiaUrl = (style) => `https://tiles.stadiamaps.com/tiles/${style}/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`;
@@ -192,21 +195,21 @@ function initMap() {
   } else {
     // Fallback ที่ไม่ต้องใช้ API key (เช่น local dev ที่ยังไม่ตั้ง .dev.vars)
     baseTileLayers.voyager = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>',
       maxZoom: 19,
     });
     baseTileLayers.dark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
+      attribution: '&copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
       maxZoom: 20,
     });
   }
 
   baseTileLayers.satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-    attribution: 'Tiles &copy; Esri &mdash; HII ThaiWater',
+    attribution: 'Tiles &copy; Esri',
     maxZoom: 19,
   });
   baseTileLayers.topo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-    attribution: 'Map &copy; OpenTopoMap | ThaiWater',
+    attribution: '&copy; OpenTopoMap',
     maxZoom: 17,
   });
 
