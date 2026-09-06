@@ -62,20 +62,20 @@
 
           <!-- Interactive Tool Buttons -->
           <div class="nav-tool-group">
-            <button id="btnFindNearest" class="nav-tool-btn" title="เช็คความเสี่ยงน้ำท่วมตามพิกัด GPS ของฉัน">
+            <button id="btnFindNearest" class="nav-tool-btn" title="ตรวจเช็กระดับน้ำจุดที่คุณอยู่">
               <i data-lucide="crosshair" class="icon-xs"></i>
               <span class="btn-text-desktop">ใกล้ฉัน</span>
             </button>
 
-            <button id="btnToggleRadarNav" class="nav-tool-btn" title="เปิด/ปิด เรดาร์ฝนสด Doppler">
+            <button id="btnToggleRadarNav" class="nav-tool-btn" title="เปิด/ปิด แผนที่เรดาร์ฝน">
               <i data-lucide="radar" class="icon-xs"></i>
               <span class="btn-text-desktop">เรดาร์ฝน</span>
               <span class="live-dot"></span>
             </button>
 
-            <button id="btnShareSnapshot" class="nav-tool-btn" title="สร้างการ์ดสรุปสถานการณ์เพื่อแชร์">
+            <button id="btnShareSnapshot" class="nav-tool-btn" title="บันทึกภาพสรุปสถานการณ์เพื่อแชร์">
               <i data-lucide="share-2" class="icon-xs"></i>
-              <span class="btn-text-desktop">แชร์การ์ด</span>
+              <span class="btn-text-desktop">ภาพสรุป</span>
             </button>
 
             <button id="btnToggleSound" class="nav-tool-btn sound-btn" title="เปิด/ปิด เสียงเตือนภัย">
@@ -116,8 +116,8 @@
           <div class="gps-header-left">
             <span class="gps-pulse-icon"><i data-lucide="map-pin"></i></span>
             <div>
-              <h3 id="gpsTitleText">วิเคราะห์ความเสี่ยงพิกัดของคุณ</h3>
-              <p id="gpsSubText" class="gps-sub-desc">กำลังคำนวณระยะห่างจากสถานีวัดระดับน้ำและวัดฝนที่ใกล้ที่สุด...</p>
+              <h3 id="gpsTitleText">ตรวจเช็กระดับน้ำจุดที่คุณอยู่</h3>
+              <p id="gpsSubText" class="gps-sub-desc">กำลังค้นหาสถานีวัดน้ำและจุดวัดฝนที่ใกล้ที่สุด...</p>
             </div>
           </div>
           <button class="btn-close-gps" id="btnCloseGps" title="ปิด">&times;</button>
@@ -139,7 +139,7 @@
                 <span class="tab-label-full">สถานีตรวจวัดระดับน้ำ</span>
                 <span class="tab-label-short">ระดับน้ำ</span>
               </span>
-              <span class="mode-tab-desc">ติดตามระดับน้ำเทียบตลิ่ง ระดับต่ำกว่า/ล้นตลิ่ง และกราฟย้อนหลัง</span>
+              <span class="mode-tab-desc">ดูระดับน้ำปัจจุบัน ระยะห่างจากตลิ่ง และกราฟย้อนหลัง</span>
             </div>
             <span class="mode-count-badge water" id="badgeWaterCount">0</span>
           </button>
@@ -153,7 +153,7 @@
                 <span class="tab-label-full">สถานีตรวจวัดปริมาณน้ำฝน</span>
                 <span class="tab-label-short">ปริมาณน้ำฝน</span>
               </span>
-              <span class="mode-tab-desc">ติดตามฝนสะสม 24 ชม., ฝน 1 ชม. ล่าสุด</span>
+              <span class="mode-tab-desc">ดูปริมาณฝนสะสม 24 ชั่วโมง และฝนตกชั่วโมงล่าสุด</span>
             </div>
             <span class="mode-count-badge rain" id="badgeRainCount">0</span>
           </button>
@@ -175,7 +175,7 @@
               <span class="kpi-number" id="waterKpiOverflow">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ระดับน้ำสูงกว่าขอบตลิ่ง</span>
+            <span class="kpi-trend">น้ำเอ่อล้นตลิ่งแล้ว</span>
           </div>
         </div>
 
@@ -187,12 +187,12 @@
             <span class="kpi-pill warning">เฝ้าระวัง</span>
           </div>
           <div class="kpi-info">
-            <span class="kpi-label">เฝ้าระวังน้ำสูง</span>
+            <span class="kpi-label">เฝ้าระวังน้ำใกล้ตลิ่ง</span>
             <div class="kpi-value-row">
               <span class="kpi-number" id="waterKpiWarning">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ต่ำกว่าตลิ่ง ≤ 0.5 ม.</span>
+            <span class="kpi-trend">ต่ำกว่าตลิ่งไม่เกิน 50 ซม.</span>
           </div>
         </div>
 
@@ -209,7 +209,7 @@
               <span class="kpi-number" id="waterKpiNormal">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ต่ำกว่าตลิ่ง > 0.5 ม.</span>
+            <span class="kpi-trend">ระดับน้ำยังอยู่ในเกณฑ์ปกติ</span>
           </div>
         </div>
 
@@ -246,7 +246,7 @@
               <span class="kpi-number" id="rainKpiVeryHeavy">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ฝน 24 ชม. ≥ 90 มม.</span>
+            <span class="kpi-trend">ฝน 24 ชม. ตั้งแต่ 90 มม. ขึ้นไป</span>
           </div>
         </div>
 
@@ -263,7 +263,7 @@
               <span class="kpi-number" id="rainKpiHeavy">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend">ฝน 24 ชม. 35–90 มม.</span>
+            <span class="kpi-trend">ฝน 24 ชม. 35 ถึง 90 มม.</span>
           </div>
         </div>
 
@@ -297,7 +297,7 @@
               <span class="kpi-number" id="rainKpiTotal">0</span>
               <span class="kpi-unit">สถานี</span>
             </div>
-            <span class="kpi-trend" id="rainKpiActiveCount">มีฝนตก – สถานี</span>
+            <span class="kpi-trend" id="rainKpiActiveCount">พบฝนตก – สถานี</span>
           </div>
         </div>
       </section>
@@ -344,7 +344,7 @@
               <span class="pill-dot yellow"></span> ฝนหนัก (35–90 มม.)
             </button>
             <button class="pill pill-rain" data-filter="has-rain">
-              <span class="pill-dot blue"></span> มีฝนตก
+              <span class="pill-dot blue"></span> จุดที่มีฝน
             </button>
           </div>
         </div>
@@ -352,7 +352,7 @@
         <!-- River Quick Chips -->
         <div class="river-chips-bar" id="ubonRiverChips">
           <span class="chips-label">
-            <i data-lucide="map" class="icon-xs"></i> ค้นหาเร็ว:
+            <i data-lucide="map" class="icon-xs"></i> เลือกดูตามลำน้ำ:
           </span>
           <button class="chip-btn" data-search="แม่น้ำมูล">แม่น้ำมูล</button>
           <button class="chip-btn" data-search="แม่น้ำชี">แม่น้ำชี</button>
@@ -385,29 +385,29 @@
               <!-- Map Floating Toolbar (สลับเลเยอร์ / เรดาร์ / GPS) -->
               <div class="map-floating-toolbar">
                 <div class="map-layer-selector" id="mapLayerSelector">
-                  <button class="map-layer-btn active" data-layer="voyager" title="แผนที่มาตรฐาน (Stadia Alidade Smooth)">
+                  <button class="map-layer-btn active" data-layer="voyager" title="แผนที่มาตรฐาน">
                     <i data-lucide="map" class="icon-xs"></i> <span>มาตรฐาน</span>
                   </button>
-                  <button class="map-layer-btn" data-layer="satellite" title="ภาพถ่ายดาวเทียม (Satellite Hybrid)">
+                  <button class="map-layer-btn" data-layer="satellite" title="ภาพถ่ายดาวเทียม">
                     <i data-lucide="satellite" class="icon-xs"></i> <span>ดาวเทียม</span>
                   </button>
-                  <button class="map-layer-btn" data-layer="dark" title="โหมดมืดแทคติคอล (Stadia Alidade Smooth Dark)">
+                  <button class="map-layer-btn" data-layer="dark" title="แผนที่โทนมืด">
                     <i data-lucide="moon" class="icon-xs"></i> <span>โหมดมืด</span>
                   </button>
-                  <button class="map-layer-btn" data-layer="topo" title="ภูมิประเทศ (Terrain/Topo)">
+                  <button class="map-layer-btn" data-layer="topo" title="แผนที่ภูมิประเทศ">
                     <i data-lucide="mountain" class="icon-xs"></i> <span>ภูมิประเทศ</span>
                   </button>
                 </div>
 
                 <div class="map-action-buttons">
-                  <button id="btnToggleRadar" class="map-control-action radar-toggle-btn" title="เปิด/ปิด เลเยอร์เรดาร์กลุ่มฝนสด RainViewer">
+                  <button id="btnToggleRadar" class="map-control-action radar-toggle-btn" title="เปิด/ปิด แผนที่เรดาร์ฝน">
                     <i data-lucide="radar" class="icon-xs"></i> <span>เรดาร์กลุ่มฝน</span>
                     <span class="radar-badge">LIVE</span>
                   </button>
-                  <button id="btnGpsMap" class="map-control-action" title="หาพิกัดตำแหน่งของฉัน">
+                  <button id="btnGpsMap" class="map-control-action" title="ระบุตำแหน่งของฉัน">
                     <i data-lucide="crosshair" class="icon-xs"></i>
                   </button>
-                  <button id="btnResetMap" class="map-control-action" title="รีเซ็ตมุมมอง จ.อุบลราชธานี">
+                  <button id="btnResetMap" class="map-control-action" title="กลับสู่มุมมองเริ่มต้น จ.อุบลฯ">
                     <i data-lucide="maximize-2" class="icon-xs"></i>
                   </button>
                 </div>
@@ -419,7 +419,7 @@
                   <i data-lucide="play" class="icon-xs" id="radarPlayIcon"></i>
                 </button>
                 <div class="radar-time-info">
-                  <span class="radar-time-label">เรดาร์ตรวจวัด:</span>
+                  <span class="radar-time-label">เวลาของภาพเรดาร์:</span>
                   <span id="radarTimeDisplay" class="radar-time-val">กำลังโหลดภาพเรดาร์...</span>
                 </div>
                 <div class="radar-timeline-slider-wrap">
@@ -434,8 +434,8 @@
                   <i data-lucide="waves" class="icon-xs"></i>
                   สัญลักษณ์สถานีระดับน้ำ
                 </h4>
-                <div class="legend-item"><span class="legend-pin red"></span> น้ำล้นตลิ่ง (ต่ำกว่า 0 ม.)</div>
-                <div class="legend-item"><span class="legend-pin orange"></span> เฝ้าระวัง (ต่ำกว่าตลิ่ง ≤ 0.5 ม.)</div>
+                <div class="legend-item"><span class="legend-pin red"></span> น้ำล้นตลิ่ง (ท่วมเกินขอบตลิ่ง)</div>
+                <div class="legend-item"><span class="legend-pin orange"></span> เฝ้าระวัง (ปริ่มตลิ่งเหลือ ≤ 50 ซม.)</div>
                 <div class="legend-item"><span class="legend-pin cyan"></span> ระดับน้ำปกติ</div>
               </div>
 
@@ -518,7 +518,7 @@
                     <th>ลุ่มน้ำ</th>
                     <th>ระดับน้ำ (ม.รทก.)</th>
                     <th>ระดับตลิ่ง</th>
-                    <th>ระดับเทียบตลิ่ง</th>
+                    <th>ระยะพ้นตลิ่ง</th>
                     <th>สถานะ</th>
                     <th>เวลาวัด</th>
                     <th>กราฟ</th>
@@ -572,11 +572,11 @@
         <div class="river-corridor-header">
           <div class="rc-title-wrap">
             <span class="rc-live-tag">
-              <span class="rc-dot"></span> LIVE GAUGES
+              <span class="rc-dot"></span> จุดตรวจวัดสด
             </span>
             <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
           </div>
-          <span class="rc-hint">คลิกที่แม่น้ำเพื่อโฟกัสบนแผนที่</span>
+          <span class="rc-hint">คลิกเพื่อดูตำแหน่งบนแผนที่</span>
         </div>
         <div class="river-corridor-cards" id="riverCorridorCards">
           <!-- Populated by JavaScript with real station data -->
@@ -616,8 +616,8 @@
           </button>
           <button class="modal-tab-btn" id="btnModalTabCrossSection">
             <i data-lucide="waves" class="icon-xs"></i>
-            <span>แบบจำลองหน้าตัดตลิ่ง 2D</span>
-            <span class="tab-badge-new">SIM</span>
+            <span>ภาพจำลองหน้าตัดลำน้ำ</span>
+            <span class="tab-badge-new">จำลอง</span>
           </button>
         </div>
 
@@ -629,17 +629,17 @@
             <span class="metric-unit">ม.รทก.</span>
           </div>
           <div class="metric-box">
-            <span class="metric-title">ระดับตลิ่งต่ำสุด</span>
+            <span class="metric-title">ระดับความสูงตลิ่ง</span>
             <span class="metric-num" id="modalMinBankMsl">-</span>
             <span class="metric-unit">ม.รทก.</span>
           </div>
           <div class="metric-box" id="modalFreeboardBox">
-            <span class="metric-title">ระดับเทียบตลิ่ง</span>
+            <span class="metric-title">ระยะพ้นตลิ่ง</span>
             <span class="metric-num" id="modalFreeboardM">-</span>
             <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
           </div>
           <div class="metric-box">
-            <span class="metric-title">ระดับน้ำท้องน้ำ</span>
+            <span class="metric-title">ความลึกจากท้องน้ำ</span>
             <span class="metric-num" id="modalWaterLocalM">-</span>
             <span class="metric-unit">ม.</span>
           </div>
@@ -659,6 +659,13 @@
               <button class="btn-range" data-days="15">15 วัน</button>
             </div>
           </div>
+          <div class="graph-compare-picker" id="graphComparePicker">
+            <span class="compare-label"><i data-lucide="git-compare-arrows" class="icon-xs"></i> เทียบปีน้ำท่วมใหญ่:</span>
+            <button class="btn-compare-year year-2562" data-year="2019">พ.ศ. 2562</button>
+            <button class="btn-compare-year year-2565" data-year="2022">พ.ศ. 2565</button>
+            <button class="btn-compare-year year-both" data-year="both">ทั้งสองปี</button>
+            <span class="compare-hint hidden" id="compareHint"></span>
+          </div>
           <div class="chart-canvas-wrapper">
             <canvas id="waterLevelChart"></canvas>
             <div class="chart-loader hidden" id="chartLoader">
@@ -672,13 +679,13 @@
         <div class="cross-section-container hidden" id="modalCrossSectionContainer">
           <div class="cross-section-header">
             <div class="cs-header-info">
-              <span class="cs-tag"><i data-lucide="activity" class="icon-xs"></i> จำลองหน้าตัดลำน้ำ 2D Physics</span>
+              <span class="cs-tag"><i data-lucide="activity" class="icon-xs"></i> แบบจำลองหน้าตัดลำน้ำ</span>
               <div class="cs-capacity-badge" id="csCapacityBadge">
-                ความจุลำน้ำ: <strong id="csCapacityVal">85%</strong>
+                ปริมาณน้ำในลำน้ำ: <strong id="csCapacityVal">85%</strong>
               </div>
             </div>
             <div class="cs-legend-row">
-              <span class="cs-legend-item"><span class="cs-dot ground"></span> ดินตลิ่ง</span>
+              <span class="cs-legend-item"><span class="cs-dot ground"></span> ดินริมตลิ่ง</span>
               <span class="cs-legend-item"><span class="cs-dot water"></span> ผิวน้ำ</span>
               <span class="cs-legend-item"><span class="cs-dot bank"></span> ขอบตลิ่ง</span>
             </div>
@@ -694,17 +701,17 @@
             <div class="sim-control-header">
               <div class="sim-title">
                 <i data-lucide="sliders" class="icon-xs"></i>
-                <span>ทดลองจำลองระดับน้ำเพิ่ม/ลด (Water Level Simulator):</span>
+                <span>ทดลองปรับระดับน้ำขึ้น-ลงเพื่อดูผลกระทบ:</span>
               </div>
-              <span class="sim-offset-badge" id="simOffsetBadge">+0.00 ม. (ค่าจริง)</span>
-              <button id="btnResetSim" class="btn-reset-sim">รีเซ็ตค่าจริง</button>
+              <span class="sim-offset-badge" id="simOffsetBadge">+0.00 ม. (ระดับจริง)</span>
+              <button id="btnResetSim" class="btn-reset-sim">กลับสู่ระดับน้ำจริง</button>
             </div>
             <div class="sim-slider-row">
               <span class="sim-min">-2.0ม.</span>
               <input type="range" id="simWaterSlider" min="-2.0" max="2.5" step="0.05" value="0" class="sim-range-input">
               <span class="sim-max">+2.5ม.</span>
             </div>
-            <p class="sim-note">* แถบเลื่อนนี้เป็นเพียงแบบจำลองเพื่อให้เห็นภาพว่า หากน้ำเพิ่มขึ้นจะส่งผลต่อขอบตลิ่งอย่างไร</p>
+            <p class="sim-note">* แถบเลื่อนนี้เป็นแบบจำลองช่วยให้เห็นว่า หากระดับน้ำเพิ่มขึ้นเท่าใดจึงจะเริ่มล้นตลิ่งเข้าท่วมพื้นที่</p>
           </div>
         </div>
       </div>
@@ -717,7 +724,7 @@
       <div class="modal-header">
         <div class="modal-title-area">
           <h2>📸 บันทึกภาพสรุปสถานการณ์น้ำ จ.อุบลราชธานี</h2>
-          <p class="modal-subtitle">สร้างการ์ด Infographic สรุปภาพรวมพร้อมแชร์ลง LINE / Facebook ได้ทันที</p>
+          <p class="modal-subtitle">บันทึกรูปภาพสรุปสถานการณ์ เพื่อส่งต่อใน LINE หรือ Facebook</p>
         </div>
         <button class="btn-close-modal" id="btnCloseSnapshotModal" title="ปิดหน้าต่าง">&times;</button>
       </div>
@@ -731,14 +738,14 @@
             <i data-lucide="download"></i> ดาวน์โหลดรูปภาพ (PNG)
           </button>
           <button id="btnCopySnapshot" class="btn-snapshot-action secondary">
-            <i data-lucide="copy"></i> คัดลอกรูปภาพลงคลิปบอร์ด
+            <i data-lucide="copy"></i> คัดลอกรูปภาพ
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

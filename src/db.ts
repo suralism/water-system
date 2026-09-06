@@ -243,7 +243,10 @@ export async function upsertWaterLevelGraphPoints(
     ).run();
   }
 
-  const validPoints = points.filter((p) => p.observedAt);
+  // เก็บเฉพาะจุดที่มีค่าจริง (ข้าม grid ช่องว่างของ API เพื่อไม่ให้ฐานข้อมูลบวมโดยไม่จำเป็น)
+  const validPoints = points.filter(
+    (p) => p.observedAt && (p.waterlevelMsl !== null || p.discharge !== null)
+  );
   const keyMap = new Map<string, WaterLevelGraphPoint>();
   for (const p of validPoints) {
     keyMap.set(`${stationId}_${p.observedAt}`, p);

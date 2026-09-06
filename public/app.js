@@ -34,6 +34,10 @@ let currentModalStation = null;
 let chartRangeDays = 1;
 let currentModalTab = "graph"; // "graph" หรือ "crossSection"
 
+// ปีน้ำท่วมใหญ่สำหรับเปรียบเทียบ (ค.ศ.) — พ.ศ. 2562 = 2019, พ.ศ. 2565 = 2022
+const FLOOD_YEARS = [2019, 2022];
+let compareYears = [];
+
 // 2D River Cross-Section Simulation
 let crossSectionAnimId = null;
 let crossSectionWavePhase = 0;
@@ -432,7 +436,7 @@ function updateKPIs() {
   animateNumber("rainKpiVeryHeavy", rainVeryHeavy);
   animateNumber("rainKpiHeavy", rainHeavy);
   animateNumber("rainKpiTotal", filteredRainfalls.length);
-  document.getElementById("rainKpiActiveCount").textContent = `มีฝนตก ${rainActiveCount.toLocaleString()} สถานี (${amphoeLabel})`;
+  document.getElementById("rainKpiActiveCount").textContent = `พบฝนตก ${rainActiveCount.toLocaleString()} สถานี (${amphoeLabel})`;
 
   if (maxRain) {
     document.getElementById("rainKpiMaxVal").textContent = Number(maxRain.rain24h).toFixed(1);
@@ -449,11 +453,11 @@ function updateKPIs() {
   const banner = document.getElementById("dangerAlertBanner");
   const bannerText = document.getElementById("dangerAlertText");
   if (waterOverflow > 0) {
-    bannerText.textContent = `🚨 มี ${waterOverflow} สถานีระดับน้ำล้นตลิ่ง ใน จ.อุบลราชธานี – โปรดติดตามสถานการณ์อย่างใกล้ชิด`;
+    bannerText.textContent = `🚨 พบน้ำล้นตลิ่ง ${waterOverflow} สถานี ใน จ.อุบลราชธานี – แจ้งเตือนประชาชนริมน้ำยกของขึ้นที่สูงและติดตามสถานการณ์ใกล้ชิด`;
     banner.classList.remove("hidden");
     banner.classList.remove("warning");
   } else if (waterWarning > 0) {
-    bannerText.textContent = `⚠️ มี ${waterWarning} สถานีระดับน้ำใกล้ตลิ่ง ใน จ.อุบลราชธานี – ควรเฝ้าระวัง`;
+    bannerText.textContent = `⚠️ มีสถานีระดับน้ำสูงปริ่มตลิ่ง ${waterWarning} สถานี ใน จ.อุบลราชธานี – ขอให้เฝ้าระวังต่อเนื่อง`;
     banner.className = "alert-banner warning";
     banner.classList.remove("hidden");
   } else {
@@ -580,7 +584,7 @@ function updateRiverCorridors() {
             <span class="rc-water-unit">ม.รทก.</span>
           </div>
           <div class="rc-freeboard-text ${statusClass}">
-            ${isOverflow ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}
+            ${isOverflow ? 'ล้นตลิ่ง ' : 'เหลือ '}${fbText}
           </div>
         </div>
 
@@ -589,8 +593,8 @@ function updateRiverCorridors() {
             <div class="rc-gauge-fill ${gaugeColorClass}" style="width: ${Math.min(100, capacityPct)}%;"></div>
           </div>
           <div class="rc-gauge-labels">
-            <span>ความจุลำน้ำ: <strong>${capacityPct}%</strong></span>
-            <span>ตลิ่ง: ${station.minBankMsl !== null ? station.minBankMsl.toFixed(2) : "-"} ม.</span>
+            <span>ปริมาณน้ำในลำน้ำ: <strong>${capacityPct}%</strong></span>
+            <span>ระดับตลิ่ง: ${station.minBankMsl !== null ? station.minBankMsl.toFixed(2) : "-"} ม.</span>
           </div>
         </div>
       </div>
@@ -685,7 +689,7 @@ function updateLeaderboards() {
               <i data-lucide="map-pin" class="icon-xs"></i> แผนที่
             </button>
             <button class="sw-btn sw-btn-graph" onclick="openWaterModal(${st.id})">
-              <i data-lucide="waves" class="icon-xs"></i> กราฟ & จำลอง
+              <i data-lucide="waves" class="icon-xs"></i> กราฟ & ภาพจำลอง
             </button>
           </div>
         </div>
@@ -695,7 +699,7 @@ function updateLeaderboards() {
 
   let html = "";
 
-  if (overflowList.length > 0 || warningList.length > 0) {
+  if (totalRisky > 0) {
     if (overflowList.length > 0) {
       html += overflowList.map((item) => renderSidebarCard(item, "overflow")).join("");
     }
@@ -708,7 +712,7 @@ function updateLeaderboards() {
     html += `
       <div class="sidebar-allclear">
         <i data-lucide="shield-check"></i>
-        <span>✅ ทุกสถานีระดับน้ำปกติ (ต่ำกว่าตลิ่ง > 0.5 ม.)</span>
+        <span>✅ ทุกสถานีระดับน้ำปกติ (ยังต่ำกว่าตลิ่งเกิน 50 ซม.)</span>
       </div>
     `;
   }
@@ -782,7 +786,7 @@ function renderMapMarkers() {
       if (!lat || !lon) return;
 
       let markerColor = "#06b6d4"; // ปกติ (cyan)
-      let statusText = "ปกติ (ต่ำกว่าตลิ่ง)";
+      let statusText = "ระดับน้ำปกติ";
       let isDanger = false;
 
       const fbText = formatFreeboard(item.freeboardM, { absOnly: true });
@@ -796,7 +800,7 @@ function renderMapMarkers() {
         (item.situationLevel !== null && item.situationLevel >= 4)
       ) {
         markerColor = "#f59e0b"; // เฝ้าระวัง (orange)
-        statusText = item.freeboardM !== null ? `⚠️ เฝ้าระวัง (เหลือ ${fbText})` : `⚠️ เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
+        statusText = item.freeboardM !== null ? `⚠️ เฝ้าระวัง (เหลืออีก ${fbText})` : `⚠️ เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
       } else {
         statusText = "✅ ระดับน้ำปกติ";
       }
@@ -848,7 +852,7 @@ function renderMapMarkers() {
               <span class="pdv" style="font-size:0.85rem; color:#475569;">${obsTime} น.</span>
             </div>
           </div>
-          <button onclick="openWaterModal(${item.station.id})" class="popup-graph-btn">🌊 ดูกราฟ & แบบจำลอง 2D</button>
+          <button onclick="openWaterModal(${item.station.id})" class="popup-graph-btn">🌊 ดูกราฟและภาพจำลองระดับน้ำ</button>
         </div>
       `;
 
@@ -986,7 +990,7 @@ async function loadRadarData() {
     }
   } catch (err) {
     console.warn("RainViewer radar data not available:", err);
-    document.getElementById("radarTimeDisplay").textContent = "ไม่สามารถเชื่อมต่อเรดาร์ได้";
+    document.getElementById("radarTimeDisplay").textContent = "ไม่สามารถโหลดข้อมูลเรดาร์ได้ในขณะนี้";
   }
 }
 
@@ -1111,9 +1115,9 @@ function checkNearbyRisk() {
   }
 
   box.classList.remove("hidden");
-  title.textContent = "กำลังค้นหาพิกัด GPS ของคุณ...";
-  sub.textContent = "โปรดอนุญาตการเข้าถึงตำแหน่งที่ตั้งในเบราว์เซอร์";
-  grid.innerHTML = `<div class="p-3 text-center text-muted" style="grid-column:1/-1;">กำลังรับพิกัดดาวเทียม GPS...</div>`;
+  title.textContent = "กำลังค้นหาตำแหน่งของคุณ...";
+  sub.textContent = "กรุณากดอนุญาตให้เข้าถึงตำแหน่งที่ตั้ง (Location) บนอุปกรณ์ของคุณ";
+  grid.innerHTML = `<div class="p-3 text-center text-muted" style="grid-column:1/-1;">กำลังค้นหาตำแหน่งและสถานีตรวจวัดที่ใกล้ที่สุด...</div>`;
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
@@ -1122,9 +1126,9 @@ function checkNearbyRisk() {
       processUserLocation(uLat, uLon);
     },
     (err) => {
-      title.textContent = "ไม่สามารถระบุพิกัดได้";
-      sub.textContent = err.message || "โปรดเปิดสิทธิ์เข้าถึง Location";
-      grid.innerHTML = `<div class="p-3 text-center text-danger" style="grid-column:1/-1;">เกิดข้อผิดพลาดในการดึงตำแหน่งพิกัด: ${err.message}</div>`;
+      title.textContent = "ไม่สามารถระบุตำแหน่งได้";
+      sub.textContent = "กรุณาเปิดการใช้งาน GPS หรืออนุญาตสิทธิ์การเข้าถึงตำแหน่งในเบราว์เซอร์";
+      grid.innerHTML = `<div class="p-3 text-center text-danger" style="grid-column:1/-1;">ไม่สามารถเข้าถึงตำแหน่งของคุณได้: ${err.message}</div>`;
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
@@ -1174,20 +1178,20 @@ function processUserLocation(uLat, uLon) {
 
   // ประเมินระดับความเสี่ยง
   let overallRisk = "safe";
-  let riskText = "ระดับความเสี่ยง: ปลอดภัย (ปกติ)";
+  let riskText = "✅ ระดับน้ำปกติ: จุดตรวจวัดใกล้เคียงยังอยู่ในเกณฑ์ปลอดภัย";
   if (closestWater && closestWater.freeboardM !== null && closestWater.freeboardM < 0) {
     overallRisk = "danger";
-    riskText = "🚨 มีความเสี่ยงสูง! สถานีใกล้คุณระดับน้ำล้นตลิ่ง";
+    riskText = "🚨 จุดเสี่ยงสูง! สถานีวัดน้ำใกล้คุณมีระดับน้ำเอ่อล้นตลิ่งแล้ว";
   } else if (closestWater && closestWater.freeboardM !== null && closestWater.freeboardM <= 0.5) {
     overallRisk = "warning";
-    riskText = "⚠️ ควรเฝ้าระวัง สถานีใกล้คุณระดับน้ำสูงใกล้ตลิ่ง";
+    riskText = "⚠️ ควรเฝ้าระวัง: สถานีวัดน้ำใกล้คุณมีระดับน้ำสูงปริ่มตลิ่ง";
   } else if (closestRain && (closestRain.rain24h ?? 0) >= 90) {
     overallRisk = "danger";
-    riskText = "🚨 มีฝนตกหนักมากในพื้นที่ใกล้คุณ";
+    riskText = "🚨 มีฝนตกหนักมากในบริเวณใกล้เคียง อาจเกิดน้ำท่วมขัง";
   }
 
   title.textContent = riskText;
-  sub.textContent = `พิกัดของคุณ: ${uLat.toFixed(4)}, ${uLon.toFixed(4)} • สรุปสถานะจุดตรวจวัดใกล้เคียง`;
+  sub.textContent = `จุดที่คุณอยู่ • สรุปข้อมูลจากสถานีตรวจวัดที่อยู่ใกล้คุณที่สุด`;
 
   let html = "";
 
@@ -1197,7 +1201,7 @@ function processUserLocation(uLat, uLon) {
     html += `
       <div class="gps-item-card" onclick="focusStationOnMap(${closestWater.station.id})">
         <div class="gps-item-top">
-          <span class="gps-type-tag">🌊 สถานีระดับน้ำใกล้ที่สุด</span>
+          <span class="gps-type-tag">🌊 สถานีวัดระดับน้ำใกล้ที่สุด</span>
           <span class="gps-dist-badge">${minWaterDist.toFixed(1)} กม.</span>
         </div>
         <div class="gps-item-name">${closestWater.station.nameTh || "สถานี " + closestWater.station.id}</div>
@@ -1208,7 +1212,7 @@ function processUserLocation(uLat, uLon) {
             <small style="color:var(--text-muted);">ม.รทก.</small>
           </div>
           <span class="gps-status-pill ${isOver ? 'danger' : closestWater.freeboardM <= 0.5 ? 'warning' : 'safe'}">
-            ${isOver ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}
+            ${isOver ? 'ล้นตลิ่ง ' : 'เหลือ '}${fbText}
           </span>
         </div>
       </div>
@@ -1220,7 +1224,7 @@ function processUserLocation(uLat, uLon) {
     html += `
       <div class="gps-item-card" onclick="focusStationOnMap(${closestRain.station.id})">
         <div class="gps-item-top">
-          <span class="gps-type-tag">🌧️ สถานีวัดน้ำฝนใกล้ที่สุด</span>
+          <span class="gps-type-tag">🌧️ จุดวัดน้ำฝนใกล้ที่สุด</span>
           <span class="gps-dist-badge">${minRainDist.toFixed(1)} กม.</span>
         </div>
         <div class="gps-item-name">${closestRain.station.nameTh || "สถานี " + closestRain.station.id}</div>
@@ -1274,24 +1278,24 @@ function processUserLocation(uLat, uLon) {
     <div class="map-popup-card user-loc-popup">
       <div class="popup-header">
         <span class="popup-tag" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">
-          📍 ตำแหน่งของคุณ
+          📍 จุดที่คุณอยู่
         </span>
-        <h4>พิกัดปัจจุบัน</h4>
+        <h4>ตำแหน่งของคุณ</h4>
         <p class="popup-loc">${uLat.toFixed(4)}, ${uLon.toFixed(4)}</p>
       </div>
       <div class="popup-data-grid" style="margin-bottom:4px;">
         <div class="popup-data-item">
-          <span class="pdl">สถานีน้ำใกล้สุด</span>
+          <span class="pdl">สถานีวัดน้ำใกล้ที่สุด</span>
           <span class="pdv" style="font-size:0.82rem; color:#0369a1;" title="${closestWater?.station.nameTh || '-'}">
             ${closestWater ? (closestWater.station.nameTh || 'สถานี ' + closestWater.station.id) : '-'}
           </span>
         </div>
         <div class="popup-data-item">
-          <span class="pdl">ระยะห่าง</span>
+          <span class="pdl">ระยะห่างจากคุณ</span>
           <span class="pdv" style="color:#2563eb;">${minWaterDist.toFixed(1)} กม.</span>
         </div>
         <div class="popup-data-item" style="grid-column:span 2; margin-top:2px;">
-          <span class="pdl">สถานะระดับน้ำจุดใกล้เคียง</span>
+          <span class="pdl">สถานการณ์น้ำจุดนี้</span>
           <span class="pdv" style="color:${userWaterColor}; font-size:0.86rem; font-weight:700;">
             ${userWaterStatus}
           </span>
@@ -1330,7 +1334,7 @@ async function openWaterModal(stationId) {
   const slider = document.getElementById("simWaterSlider");
   if (slider) slider.value = "0";
   const badge = document.getElementById("simOffsetBadge");
-  if (badge) badge.textContent = "+0.00 ม. (ค่าจริง)";
+  if (badge) badge.textContent = "+0.00 ม. (ระดับจริง)";
 
   document.getElementById("modalStationId").textContent = `ID: ${stationId}`;
   document.getElementById("modalStationName").textContent = st.nameTh || "สถานี " + stationId;
@@ -1358,10 +1362,10 @@ async function openWaterModal(stationId) {
     statusPill.textContent = "🚨 ล้นตลิ่ง";
     statusPill.className = "status-pill badge danger";
   } else if (stationWater.freeboardM !== null && stationWater.freeboardM <= 0.5) {
-    statusPill.textContent = "⚠️ เฝ้าระวังน้ำสูง";
+    statusPill.textContent = "⚠️ เฝ้าระวังใกล้ตลิ่ง";
     statusPill.className = "status-pill badge warning";
   } else {
-    statusPill.textContent = "✅ ระดับปกติ";
+    statusPill.textContent = "✅ ระดับน้ำปกติ";
     statusPill.className = "status-pill badge normal";
   }
 
@@ -1416,7 +1420,7 @@ function drawCrossSection() {
   const capValEl = document.getElementById("csCapacityVal");
   const capBadgeEl = document.getElementById("csCapacityBadge");
   if (capValEl && capBadgeEl) {
-    capValEl.textContent = `${capacityPct}% (${isOverflow ? 'น้ำล้นตลิ่ง' : isWarning ? 'เฝ้าระวัง' : 'ปกติ'})`;
+    capValEl.textContent = `${capacityPct}% (${isOverflow ? 'น้ำเอ่อล้นตลิ่ง' : isWarning ? 'ปริ่มตลิ่ง' : 'ปกติ'})`;
     capBadgeEl.className = `cs-capacity-badge ${isOverflow ? 'overflow' : isWarning ? 'warning' : ''}`;
   }
 
@@ -1551,7 +1555,7 @@ function drawCrossSection() {
   // 7. ป้ายแสดงระดับน้ำปัจจุบัน
   ctx.fillStyle = isOverflow ? "#dc2626" : isWarning ? "#d97706" : "#0284c7";
   ctx.font = "bold 13px 'Sarabun', sans-serif";
-  const waterLabel = `ระดับน้ำ: ${simulatedWaterLevel.toFixed(2)} ม.รทก. (${currentFreeboard >= 0 ? 'ต่ำกว่าตลิ่ง ' + currentFreeboard.toFixed(2) + ' ม.' : 'ล้นตลิ่ง ' + Math.abs(currentFreeboard).toFixed(2) + ' ม.'})`;
+  const waterLabel = `ระดับน้ำ: ${simulatedWaterLevel.toFixed(2)} ม.รทก. (${currentFreeboard >= 0 ? 'เหลืออีก ' + currentFreeboard.toFixed(2) + ' ม. จะถึงตลิ่ง' : 'ล้นตลิ่ง ' + Math.abs(currentFreeboard).toFixed(2) + ' ม.'})`;
   ctx.fillText(waterLabel, width / 2 - 120, waterSurfaceY - 14);
 }
 
@@ -1748,19 +1752,19 @@ function generateSnapshotCard() {
 
   const kpis = [
     {
-      label: "น้ำล้นตลิ่ง (วิกฤต)",
+      label: "น้ำล้นตลิ่ง",
       val: overflowCount,
       unit: "สถานี",
-      sub: overflowCount > 0 ? "ต้องเฝ้าระวังสูงสุด 🚨" : "ไม่มีจุดวิกฤต",
+      sub: overflowCount > 0 ? "ยกของขึ้นที่สูง 🚨" : "ยังไม่มีจุดล้นตลิ่ง",
       color: "#ef4444",
       bg: "rgba(239, 68, 68, 0.12)",
       border: "rgba(239, 68, 68, 0.35)",
     },
     {
-      label: "เฝ้าระวังน้ำสูง",
+      label: "เฝ้าระวังใกล้ตลิ่ง",
       val: warningCount,
       unit: "สถานี",
-      sub: "ต่ำกว่าตลิ่ง ≤ 0.5 ม.",
+      sub: "เหลือ ≤ 50 ซม.",
       color: "#f59e0b",
       bg: "rgba(245, 158, 11, 0.12)",
       border: "rgba(245, 158, 11, 0.35)",
@@ -1769,7 +1773,7 @@ function generateSnapshotCard() {
       label: "ระดับน้ำปกติ",
       val: normalCount,
       unit: "สถานี",
-      sub: "อยู่ในเกณฑ์ปลอดภัย ✅",
+      sub: "ปลอดภัย ไม่ล้นตลิ่ง ✅",
       color: "#10b981",
       bg: "rgba(16, 185, 129, 0.12)",
       border: "rgba(16, 185, 129, 0.35)",
@@ -1836,7 +1840,7 @@ function generateSnapshotCard() {
   // Column 1 Header
   ctx.fillStyle = "#38bdf8";
   ctx.font = "700 15px 'Sarabun', sans-serif";
-  ctx.fillText("🌊 จุดตรวจวัดระดับน้ำสำคัญ & เสี่ยงล้นตลิ่ง", col1X + 18, colY + 30);
+  ctx.fillText("🌊 จุดตรวจวัดระดับน้ำสำคัญในพื้นที่", col1X + 18, colY + 30);
   ctx.fillStyle = "#64748b";
   ctx.font = "400 12px 'Sarabun', sans-serif";
   ctx.fillText("ระยะพ้นตลิ่ง (ม.)", col1X + col1W - 110, colY + 30);
@@ -1907,7 +1911,7 @@ function generateSnapshotCard() {
   // Column 2 Header
   ctx.fillStyle = "#38bdf8";
   ctx.font = "700 15px 'Sarabun', sans-serif";
-  ctx.fillText("🌧️ สถานีปริมาณน้ำฝนสะสมสูงสุด (24 ชม.)", col2X + 18, colY + 30);
+  ctx.fillText("🌧️ จุดวัดปริมาณฝนสะสมสูงสุด (24 ชม.)", col2X + 18, colY + 30);
   ctx.fillStyle = "#64748b";
   ctx.font = "400 12px 'Sarabun', sans-serif";
   ctx.fillText("ฝน 24 ชม. (มม.)", col2X + col2W - 105, colY + 30);
@@ -1962,18 +1966,18 @@ function generateSnapshotCard() {
   const barH = 50;
   let verdictBg = "rgba(16, 185, 129, 0.12)";
   let verdictBorder = "rgba(16, 185, 129, 0.35)";
-  let verdictText = `✅ สรุปสถานการณ์: ระดับน้ำแม่น้ำมูล-ชีอยู่ในเกณฑ์ปกติทุกจุดตรวจวัด สภาพอากาศปกติ`;
+  let verdictText = `✅ ภาพรวมสถานการณ์: ระดับน้ำในแม่น้ำสายหลักยังอยู่ในเกณฑ์ปกติ สภาพอากาศทั่วไปปกติ`;
   let verdictColor = "#10b981";
 
   if (overflowCount > 0) {
     verdictBg = "rgba(239, 68, 68, 0.15)";
     verdictBorder = "rgba(239, 68, 68, 0.45)";
-    verdictText = `🚨 สรุปสถานการณ์: พบน้ำล้นตลิ่ง ${overflowCount} สถานี ขอให้ประชาชนพื้นที่ลุ่มต่ำริมน้ำมูลเตรียมพร้อมรับสถานการณ์`;
+    verdictText = `🚨 แจ้งเตือน: พบน้ำล้นตลิ่ง ${overflowCount} สถานี ประชาชนในพื้นที่ลุ่มต่ำริมน้ำควรยกของขึ้นที่สูงและติดตามข่าวใกล้ชิด`;
     verdictColor = "#ef4444";
   } else if (warningCount > 0) {
     verdictBg = "rgba(245, 158, 11, 0.15)";
     verdictBorder = "rgba(245, 158, 11, 0.45)";
-    verdictText = `⚠️ สรุปสถานการณ์: ระดับน้ำอยู่ในเกณฑ์เฝ้าระวัง ${warningCount} สถานี ยังไม่มีรายงานน้ำล้นตลิ่งในพื้นที่`;
+    verdictText = `⚠️ แจ้งเตือน: ระดับน้ำเริ่มสูงปริ่มตลิ่ง ${warningCount} สถานี ยังไม่พบจุดน้ำล้นตลิ่ง แต่ควรเฝ้าระวังสถานการณ์ต่อเนื่อง`;
     verdictColor = "#f59e0b";
   }
 
@@ -2009,7 +2013,7 @@ async function copySnapshotToClipboard() {
       await navigator.clipboard.write([
         new ClipboardItem({ "image/png": blob })
       ]);
-      alert("✅ คัดลอกภาพสรุปสถานการณ์ลงคลิปบอร์ดแล้ว! สามารถกดวาง (Ctrl+V) เพื่อแชร์ได้ทันที");
+      alert("✅ คัดลอกรูปภาพแล้ว สามารถกดวาง (Ctrl+V หรือ Paste) เพื่อส่งในแชท LINE หรือ Facebook ได้ทันที");
     } catch (err) {
       downloadSnapshot();
     }
@@ -2152,7 +2156,24 @@ async function loadStationGraph() {
     const json = await res.json();
 
     if (json.success && json.data) {
-      renderChart(json.data);
+      // ดึงข้อมูลปีน้ำท่วม (ช่วงเดือน-วันเดียวกัน) แบบขนานเพื่อเทียบเส้นกราฟ
+      let compareResults = [];
+      if (compareYears.length > 0) {
+        compareResults = await Promise.all(
+          compareYears.map(async (year) => {
+            try {
+              const yStart = `${year}-${startDate.slice(5)}`;
+              const yEnd = `${year}-${endDate.slice(5, 10)} ${endDate.slice(11)}`;
+              const yRes = await fetch(`/api/water-levels/graph?station_id=${currentModalStation.id}&start_date=${yStart}&end_date=${encodeURIComponent(yEnd)}`);
+              const yJson = await yRes.json();
+              return { year, data: yJson.success ? yJson.data : null };
+            } catch {
+              return { year, data: null };
+            }
+          })
+        );
+      }
+      renderChart(json.data, compareResults);
     }
   } catch (err) {
     console.error("Error loading graph:", err);
@@ -2161,7 +2182,19 @@ async function loadStationGraph() {
   }
 }
 
-function renderChart(graphResult) {
+/**
+ * แปลง ISO timestamp เป็น key "MM-DD HH" แบบเวลาไทย (+07:00)
+ * ใช้สำหรับ align ข้อมูลคนละปีให้อยู่ตำแหน่ง x เดียวกันบนกราฟ
+ */
+function thaiLocalHourKey(isoStr) {
+  if (!isoStr) return null;
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return null;
+  const th = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return `${padZero(th.getUTCMonth() + 1)}-${padZero(th.getUTCDate())} ${padZero(th.getUTCHours())}`;
+}
+
+function renderChart(graphResult, compareResults = []) {
   const canvas = document.getElementById("waterLevelChart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
@@ -2179,7 +2212,7 @@ function renderChart(graphResult) {
   points.forEach((pt) => {
     const d = pt.observedAt ? new Date(pt.observedAt) : (pt.rawDatetime ? new Date(pt.rawDatetime.replace(" ", "T") + "+07:00") : null);
     const labelStr = d ? `${padZero(d.getHours())}:${padZero(d.getMinutes())} (${d.getDate()}/${d.getMonth()+1})` : pt.rawDatetime;
-    
+
     labels.push(labelStr);
     waterLevelValues.push(pt.waterlevelMsl);
 
@@ -2208,6 +2241,54 @@ function renderChart(graphResult) {
       pointBackgroundColor: isDark ? "#38bdf8" : "#0369a1",
     }
   ];
+
+  // เส้นเปรียบเทียบปีน้ำท่วมใหญ่ — align ตาม key "เดือน-วัน ชั่วโมง" เวลาไทย
+  const compareStyles = {
+    2019: { be: 2562, color: "#8b5cf6", darkColor: "#a78bfa" },
+    2022: { be: 2565, color: "#10b981", darkColor: "#34d399" },
+  };
+  const missingYears = [];
+
+  for (const cmp of compareResults) {
+    const style = compareStyles[cmp.year];
+    if (!style || !cmp.data?.points?.length) {
+      if (style) missingYears.push(style.be);
+      continue;
+    }
+    const cmpMap = new Map();
+    for (const pt of cmp.data.points) {
+      const key = thaiLocalHourKey(pt.observedAt);
+      if (key !== null && pt.waterlevelMsl !== null) cmpMap.set(key, pt.waterlevelMsl);
+    }
+    if (cmpMap.size === 0) {
+      missingYears.push(style.be);
+      continue;
+    }
+    datasets.push({
+      label: `ปีน้ำท่วม พ.ศ. ${style.be}`,
+      data: points.map((pt) => cmpMap.get(thaiLocalHourKey(pt.observedAt)) ?? null),
+      borderColor: isDark ? style.darkColor : style.color,
+      borderDash: [2, 2],
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      fill: false,
+      tension: 0.25,
+      spanGaps: true,
+      borderWidth: 1.8,
+    });
+  }
+
+  // แจ้งเตือนเมื่อสถานีไม่มีข้อมูลของปีที่เลือก
+  const compareHint = document.getElementById("compareHint");
+  if (compareHint) {
+    if (missingYears.length > 0) {
+      compareHint.textContent = `⚠ สถานีนี้ไม่มีข้อมูลปี ${missingYears.join(", ")}`;
+      compareHint.classList.remove("hidden");
+    } else {
+      compareHint.textContent = "";
+      compareHint.classList.add("hidden");
+    }
+  }
 
   if (minBankValues.length > 0) {
     datasets.push({
@@ -2714,6 +2795,30 @@ function setupEventListeners() {
       document.querySelectorAll(".btn-range").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       chartRangeDays = Number(btn.dataset.days);
+      loadStationGraph();
+    });
+  });
+
+  // Flood Year Comparison Buttons (พ.ศ. 2562 / 2565 / ทั้งสองปี)
+  document.querySelectorAll(".btn-compare-year").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const year = btn.dataset.year;
+      if (year === "both") {
+        // เลือกทั้งสองปี หรือยกเลิกทั้งหมดถ้ากดซ้ำตอนเปิดอยู่แล้ว
+        const allOn = compareYears.length === FLOOD_YEARS.length;
+        compareYears = allOn ? [] : [...FLOOD_YEARS];
+        document.querySelectorAll(".btn-compare-year").forEach((b) =>
+          b.classList.toggle("active", !allOn)
+        );
+      } else {
+        const y = Number(year);
+        compareYears = compareYears.includes(y)
+          ? compareYears.filter((v) => v !== y)
+          : [...compareYears, y].sort();
+        btn.classList.toggle("active", compareYears.includes(y));
+        const bothBtn = document.querySelector('.btn-compare-year[data-year="both"]');
+        bothBtn?.classList.toggle("active", compareYears.length === FLOOD_YEARS.length);
+      }
       loadStationGraph();
     });
   });

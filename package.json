@@ -12,7 +12,9 @@
     "deploy": "wrangler deploy",
     "demo": "tsx src/demo.ts",
     "test": "tsx src/test.ts && tsx src/test-db.ts",
-    "test:db": "tsx src/test-db.ts"
+    "test:db": "tsx src/test-db.ts",
+    "backfill": "tsx scripts/backfill-history.ts 2019",
+    "backfill:local": "tsx scripts/backfill-history.ts 2019 --local"
   },
   "keywords": [
     "thaiwater",

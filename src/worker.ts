@@ -382,17 +382,29 @@ app.post("/api/admin/backfill-graphs", async (c) => {
       return c.json({ success: false, message: "D1 database binding (DB) is not available" }, 400);
     }
 
-    const daysStr = c.req.query("days") || "7";
-    const days = Math.min(Math.max(parseInt(daysStr, 10) || 7, 1), 30);
+    // รองรับ 2 โหมด: ระบุ start_date/end_date ตรง ๆ (สำหรับ backfill ย้อนหลังหลายปี)
+    // หรือใช้ days (default 7 วัน, cap 30 วัน) สำหรับ backfill ล่าสุด
+    const pad = (n: number) => String(n).padStart(2, "0");
+    let startDate: string;
+    let endDate: string;
+
+    const startDateParam = c.req.query("start_date");
+    const endDateParam = c.req.query("end_date");
+
+    if (startDateParam && endDateParam) {
+      startDate = startDateParam.trim();
+      endDate = endDateParam.trim();
+    } else {
+      const daysStr = c.req.query("days") || "7";
+      const days = Math.min(Math.max(parseInt(daysStr, 10) || 7, 1), 30);
+      const today = new Date();
+      const startObj = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+      startDate = `${startObj.getFullYear()}-${pad(startObj.getMonth() + 1)}-${pad(startObj.getDate())}`;
+      endDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())} ${pad(today.getHours())}:${pad(today.getMinutes())}`;
+    }
 
     const waterLevels = await thaiWaterService.getWaterLevel();
     const db = c.env.DB;
-
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const today = new Date();
-    const startObj = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
-    const startDate = `${startObj.getFullYear()}-${pad(startObj.getMonth() + 1)}-${pad(startObj.getDate())}`;
-    const endDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())} ${pad(today.getHours())}:${pad(today.getMinutes())}`;
 
     let totalPointsSaved = 0;
     const errors: { stationId: number; error: string }[] = [];
@@ -421,7 +433,7 @@ app.post("/api/admin/backfill-graphs", async (c) => {
 
     return c.json({
       success: true,
-      message: `Backfilled graph points for ${waterLevels.length} stations over ${days} days`,
+      message: `Backfilled graph points for ${waterLevels.length} stations (${startDate} → ${endDate})`,
       totalStations: waterLevels.length,
       totalPointsSaved,
       errorsCount: errors.length,

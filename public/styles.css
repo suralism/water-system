@@ -2181,6 +2181,71 @@ body {
   box-shadow: var(--shadow-xs);
 }
 
+/* Flood Year Comparison Picker */
+.graph-compare-picker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.compare-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.compare-label svg { width: 13px; height: 13px; }
+
+.btn-compare-year {
+  padding: 3px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--t-fast);
+}
+
+.btn-compare-year.year-2562.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-compare-year.year-2565.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-compare-year.year-both.active {
+  background: linear-gradient(90deg, #8b5cf6 50%, #10b981 50%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--shadow-xs);
+}
+
+.compare-hint {
+  font-size: 0.72rem;
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .graph-compare-picker { background: var(--bg-card, #0f172a); }
+[data-theme="dark"] .btn-compare-year { background: var(--bg-input, #1e293b); color: var(--text-muted); }
+
 .chart-canvas-wrapper {
   position: relative;
   height: 260px;
