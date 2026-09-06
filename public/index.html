@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body>
   <div class="app-shell">
@@ -558,76 +558,111 @@
   <div class="modal-backdrop" id="stationModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="modalStationName">
     <div class="modal-card">
       <div class="modal-header">
-        <div class="modal-title-area">
-          <div class="modal-badge-group">
-            <span class="modal-station-id" id="modalStationId">ID: -</span>
-            <span class="status-pill badge" id="modalStatusPill">-</span>
+        <div class="modal-header-lead">
+          <div class="modal-station-icon">
+            <i data-lucide="waves"></i>
           </div>
-          <h2 id="modalStationName">สถานีวัดระดับน้ำ</h2>
-          <p id="modalStationLocation" class="modal-subtitle">ตำบล อำเภอ จังหวัด</p>
+          <div class="modal-title-area">
+            <div class="modal-badge-group">
+              <span class="modal-station-id" id="modalStationId">ID: -</span>
+              <span class="status-pill badge" id="modalStatusPill">-</span>
+            </div>
+            <h2 id="modalStationName">สถานีวัดระดับน้ำ</h2>
+            <p id="modalStationLocation" class="modal-subtitle">ตำบล อำเภอ จังหวัด</p>
+          </div>
         </div>
-        <button class="icon-btn" id="btnCloseModal" title="ปิดหน้าต่าง" aria-label="ปิดหน้าต่าง">&times;</button>
+        <button class="icon-btn modal-close-btn" id="btnCloseModal" title="ปิดหน้าต่าง (Esc)" aria-label="ปิดหน้าต่าง">&times;</button>
       </div>
 
       <div class="modal-body">
-        <!-- Modal View Tabs -->
+        <!-- Modal View Tabs (สลับ กราฟ / หน้าตัดลำน้ำ) -->
         <div class="modal-tab-selector" role="tablist" aria-label="มุมมองในสถานี">
           <button class="modal-tab-btn active" id="btnModalTabGraph" role="tab" aria-selected="true">
             <i data-lucide="line-chart" class="icon-xs"></i>
-            <span>กราฟระดับน้ำย้อนหลัง</span>
+            <span>กราฟสถิติย้อนหลัง</span>
           </button>
           <button class="modal-tab-btn" id="btnModalTabCrossSection" role="tab" aria-selected="false">
-            <i data-lucide="waves" class="icon-xs"></i>
-            <span>ภาพจำลองหน้าตัดลำน้ำ</span>
-            <span class="tab-badge-new">จำลอง</span>
+            <i data-lucide="activity" class="icon-xs"></i>
+            <span>แบบจำลองหน้าตัดลำน้ำ 2D</span>
+            <span class="tab-badge-new">SIM</span>
           </button>
         </div>
 
-        <!-- Metrics Grid -->
+        <!-- Metrics Grid: Hero Card Style -->
         <div class="modal-metrics-grid">
-          <div class="metric-box">
-            <span class="metric-title">ระดับน้ำปัจจุบัน</span>
-            <span class="metric-num text-cyan" id="modalWaterLevelMsl">-</span>
-            <span class="metric-unit">ม.รทก.</span>
+          <!-- กล่องหลัก 1: ระดับน้ำปัจจุบัน -->
+          <div class="metric-box metric-hero primary">
+            <div class="metric-head">
+              <span class="metric-title">ระดับน้ำปัจจุบัน</span>
+              <span class="metric-pill">MSL</span>
+            </div>
+            <div class="metric-body">
+              <span class="metric-num text-cyan" id="modalWaterLevelMsl">-</span>
+              <span class="metric-unit">ม.รทก.</span>
+            </div>
+            <span class="metric-hint">เทียบระดับน้ำทะเลปานกลาง</span>
           </div>
-          <div class="metric-box">
-            <span class="metric-title">ระดับตลิ่ง</span>
-            <span class="metric-num" id="modalMinBankMsl">-</span>
-            <span class="metric-unit">ม.รทก.</span>
+
+          <!-- กล่องหลัก 2: ระยะพ้นตลิ่ง (Critical) -->
+          <div class="metric-box metric-hero freeboard" id="modalFreeboardBox">
+            <div class="metric-head">
+              <span class="metric-title">ระยะพ้นตลิ่ง</span>
+              <span class="metric-pill freeboard-tag">สถานะ</span>
+            </div>
+            <div class="metric-body">
+              <span class="metric-num" id="modalFreeboardM">-</span>
+              <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
+            </div>
+            <span class="metric-hint">ระยะห่างถึงขอบตลิ่ง</span>
           </div>
-          <div class="metric-box" id="modalFreeboardBox">
-            <span class="metric-title">ระยะพ้นตลิ่ง</span>
-            <span class="metric-num" id="modalFreeboardM">-</span>
-            <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
-          </div>
+
+          <!-- กล่องรอง 1: ระดับตลิ่ง -->
           <div class="metric-box">
-            <span class="metric-title">ความลึกจากท้องน้ำ</span>
-            <span class="metric-num" id="modalWaterLocalM">-</span>
-            <span class="metric-unit">ม.</span>
+            <div class="metric-head">
+              <span class="metric-title">ระดับตลิ่ง</span>
+            </div>
+            <div class="metric-body">
+              <span class="metric-num" id="modalMinBankMsl">-</span>
+              <span class="metric-unit">ม.รทก.</span>
+            </div>
+            <span class="metric-hint">จุดเริ่มล้นตลิ่ง</span>
+          </div>
+
+          <!-- กล่องรอง 2: ความลึกท้องน้ำ -->
+          <div class="metric-box">
+            <div class="metric-head">
+              <span class="metric-title">ความลึกจากท้องน้ำ</span>
+            </div>
+            <div class="metric-body">
+              <span class="metric-num" id="modalWaterLocalM">-</span>
+              <span class="metric-unit">ม.</span>
+            </div>
+            <span class="metric-hint">ระดับน้ำจากก้นลำน้ำ</span>
           </div>
         </div>
 
         <!-- TAB 1: Graph Section -->
         <div class="graph-section" id="modalGraphSection" role="tabpanel">
-          <div class="graph-header">
-            <div class="graph-title-wrap">
-              <i data-lucide="line-chart"></i>
-              <h3>กราฟระดับน้ำย้อนหลัง เทียบระดับตลิ่ง</h3>
+          <div class="graph-toolbar">
+            <div class="graph-toolbar-group">
+              <span class="toolbar-label"><i data-lucide="calendar" class="icon-xs"></i> ช่วงเวลา:</span>
+              <div class="graph-range-picker" role="group" aria-label="เลือกช่วงเวลากราฟ">
+                <button class="btn-range active" data-days="1" aria-pressed="true">24 ชม.</button>
+                <button class="btn-range" data-days="7" aria-pressed="false">7 วัน</button>
+                <button class="btn-range" data-days="15" aria-pressed="false">15 วัน</button>
+                <button class="btn-range" data-days="30" aria-pressed="false">30 วัน</button>
+              </div>
             </div>
-            <div class="graph-range-picker" role="group" aria-label="เลือกช่วงเวลากราฟ">
-              <button class="btn-range active" data-days="1" aria-pressed="true">24 ชั่วโมง</button>
-              <button class="btn-range" data-days="7" aria-pressed="false">7 วัน</button>
-              <button class="btn-range" data-days="15" aria-pressed="false">15 วัน</button>
-              <button class="btn-range" data-days="30" aria-pressed="false">30 วัน</button>
+
+            <div class="graph-toolbar-group compare-group" id="graphComparePicker" role="group" aria-label="เทียบปีน้ำท่วมใหญ่">
+              <span class="toolbar-label compare-label"><i data-lucide="git-compare-arrows" class="icon-xs"></i> เทียบปีน้ำท่วม:</span>
+              <button class="btn-compare-year year-2562" data-year="2019" aria-pressed="false">พ.ศ. 2562</button>
+              <button class="btn-compare-year year-2565" data-year="2022" aria-pressed="false">พ.ศ. 2565</button>
+              <button class="btn-compare-year year-both" data-year="both" aria-pressed="false">ทั้งสองปี</button>
+              <span class="compare-hint hidden" id="compareHint"></span>
             </div>
           </div>
-          <div class="graph-compare-picker" id="graphComparePicker" role="group" aria-label="เทียบปีน้ำท่วมใหญ่">
-            <span class="compare-label"><i data-lucide="git-compare-arrows" class="icon-xs"></i> เทียบปีน้ำท่วมใหญ่:</span>
-            <button class="btn-compare-year year-2562" data-year="2019" aria-pressed="false">พ.ศ. 2562</button>
-            <button class="btn-compare-year year-2565" data-year="2022" aria-pressed="false">พ.ศ. 2565</button>
-            <button class="btn-compare-year year-both" data-year="both" aria-pressed="false">ทั้งสองปี</button>
-            <span class="compare-hint hidden" id="compareHint"></span>
-          </div>
+
           <div class="chart-canvas-wrapper">
             <canvas id="waterLevelChart" role="img" aria-label="กราฟระดับน้ำย้อนหลัง"></canvas>
             <div class="chart-loader hidden" id="chartLoader">
@@ -641,9 +676,9 @@
         <div class="cross-section-container hidden" id="modalCrossSectionContainer" role="tabpanel">
           <div class="cross-section-header">
             <div class="cs-header-info">
-              <span class="cs-tag"><i data-lucide="activity" class="icon-xs"></i> แบบจำลองหน้าตัดลำน้ำ</span>
+              <span class="cs-tag"><i data-lucide="activity" class="icon-xs"></i> หน้าตัดลำน้ำ</span>
               <div class="cs-capacity-badge" id="csCapacityBadge">
-                ปริมาณน้ำในลำน้ำ: <strong id="csCapacityVal">85%</strong>
+                ปริมาณน้ำ: <strong id="csCapacityVal">85%</strong>
               </div>
             </div>
             <div class="cs-legend-row">
@@ -673,9 +708,12 @@
               <input type="range" id="simWaterSlider" min="-2.0" max="2.5" step="0.05" value="0" class="sim-range-input" aria-label="ปรับระดับน้ำจำลอง">
               <span class="sim-max">+2.5ม.</span>
             </div>
-            <p class="sim-note">* แถบเลื่อนนี้เป็นแบบจำลองช่วยให้เห็นว่า หากระดับน้ำเพิ่มขึ้นเท่าใดจึงจะเริ่มล้นตลิ่งเข้าท่วมพื้นที่</p>
+            <p class="sim-note">* แถบเลื่อนนี้เป็นแบบจำลองเพื่อประเมินระดับน้ำที่จะเริ่มล้นตลิ่งเข้าท่วมพื้นที่ริมฝั่ง</p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
       </div>
     </div>
   </div>
@@ -707,7 +745,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

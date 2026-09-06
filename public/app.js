@@ -1346,22 +1346,32 @@ async function openWaterModal(stationId) {
 
   const freeboardEl = document.getElementById("modalFreeboardM");
   const freeboardUnitEl = document.getElementById("modalFreeboardUnit");
+  const freeboardBox = document.getElementById("modalFreeboardBox");
+
+  const isOverflow = stationWater.freeboardM !== null && stationWater.freeboardM < 0;
+  const isWarning = (stationWater.freeboardM !== null && stationWater.freeboardM <= 0.5) ||
+                    (stationWater.situationLevel !== null && stationWater.situationLevel >= 4);
+
   if (stationWater.freeboardM !== null) {
     const fbObj = formatFreeboard(stationWater.freeboardM, { withSign: true, returnObject: true });
     freeboardEl.textContent = fbObj.num;
     if (freeboardUnitEl) freeboardUnitEl.textContent = fbObj.unit;
-    freeboardEl.style.color = stationWater.freeboardM < 0 ? "#f87171" : "#10b981";
+    freeboardEl.style.color = isOverflow ? "var(--danger)" : isWarning ? "var(--warning)" : "var(--success)";
   } else {
     freeboardEl.textContent = "-";
     if (freeboardUnitEl) freeboardUnitEl.textContent = "ม.";
-    freeboardEl.style.color = "#fff";
+    freeboardEl.style.color = "var(--text-1)";
+  }
+
+  if (freeboardBox) {
+    freeboardBox.className = `metric-box metric-hero freeboard ${isOverflow ? 'danger' : isWarning ? 'warning' : 'safe'}`;
   }
 
   const statusPill = document.getElementById("modalStatusPill");
-  if (stationWater.freeboardM !== null && stationWater.freeboardM < 0) {
+  if (isOverflow) {
     statusPill.textContent = "🚨 ล้นตลิ่ง";
     statusPill.className = "status-pill badge danger";
-  } else if (stationWater.freeboardM !== null && stationWater.freeboardM <= 0.5) {
+  } else if (isWarning) {
     statusPill.textContent = "⚠️ เฝ้าระวังใกล้ตลิ่ง";
     statusPill.className = "status-pill badge warning";
   } else {
@@ -1371,6 +1381,7 @@ async function openWaterModal(stationId) {
 
   document.getElementById("stationModalBackdrop").classList.add("open");
   document.getElementById("btnCloseModal")?.focus();
+  if (typeof lucide !== "undefined") lucide.createIcons();
 
   // เริ่มโหลดกราฟและเตรียมแบบจำลอง 2D
   await loadStationGraph();
