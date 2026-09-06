@@ -75,7 +75,7 @@
             <i data-lucide="table" class="icon-sm"></i> <span>ตารางข้อมูล</span>
           </button>
           <button id="btnNavRivers" class="side-nav-btn">
-            <i data-lucide="route" class="icon-sm"></i> <span>5 แม่น้ำสายหลัก</span>
+            <i data-lucide="route" class="icon-sm"></i> <span>5 ลำน้ำสายหลัก</span>
           </button>
         </nav>
       </div>
@@ -84,14 +84,14 @@
         <p class="sidebar-heading">เครื่องมือ</p>
         <nav class="sidebar-nav" aria-label="เครื่องมือ">
           <button id="btnFindNearest" class="side-nav-btn">
-            <i data-lucide="crosshair" class="icon-sm"></i> <span>ตรวจน้ำใกล้ฉัน</span>
+            <i data-lucide="crosshair" class="icon-sm"></i> <span>เช็กระดับน้ำใกล้ฉัน</span>
           </button>
           <button id="btnToggleRadarNav" class="side-nav-btn" aria-pressed="false">
             <i data-lucide="radar" class="icon-sm"></i> <span>เรดาร์ฝน</span>
             <span class="live-dot" aria-hidden="true"></span>
           </button>
           <button id="btnShareSnapshot" class="side-nav-btn">
-            <i data-lucide="share-2" class="icon-sm"></i> <span>ภาพสรุปแชร์</span>
+            <i data-lucide="share-2" class="icon-sm"></i> <span>แชร์ภาพสรุป</span>
           </button>
         </nav>
       </div>
@@ -107,7 +107,7 @@
               <i data-lucide="clock" class="icon-xs"></i>
               <span id="countdownTimer">05:00</span>
             </span>
-            <button id="btnRefresh" class="btn-refresh" title="ดึงข้อมูลใหม่ทันที" aria-label="ดึงข้อมูลใหม่ทันที">
+            <button id="btnRefresh" class="btn-refresh" title="อัปเดตข้อมูลล่าสุด" aria-label="อัปเดตข้อมูลล่าสุด">
               <i data-lucide="refresh-cw" class="icon-sm"></i>
             </button>
           </div>
@@ -137,7 +137,7 @@
           <span class="brand-icon small"><i data-lucide="waves"></i></span>
           <strong>UBONWATCH</strong>
         </div>
-        <button class="icon-btn" id="btnTopRefresh" title="ดึงข้อมูลใหม่ทันที" aria-label="ดึงข้อมูลใหม่ทันที">
+        <button class="icon-btn" id="btnTopRefresh" title="อัปเดตข้อมูลล่าสุด" aria-label="อัปเดตข้อมูลล่าสุด">
           <i data-lucide="refresh-cw" class="icon-sm"></i>
         </button>
       </header>
@@ -156,8 +156,8 @@
             <div class="gps-header-left">
               <span class="gps-pulse-icon"><i data-lucide="map-pin"></i></span>
               <div>
-                <h3 id="gpsTitleText">ตรวจเช็กระดับน้ำจุดที่คุณอยู่</h3>
-                <p id="gpsSubText" class="gps-sub-desc">กำลังค้นหาสถานีวัดน้ำและจุดวัดฝนที่ใกล้ที่สุด...</p>
+                <h3 id="gpsTitleText">ตรวจเช็กระดับน้ำบริเวณที่คุณอยู่</h3>
+                <p id="gpsSubText" class="gps-sub-desc">กำลังค้นหาสถานีวัดระดับน้ำและสถานีวัดน้ำฝนที่ใกล้ที่สุด...</p>
               </div>
             </div>
             <button class="icon-btn" id="btnCloseGps" title="ปิด" aria-label="ปิดกล่องผลลัพธ์ใกล้ฉัน">
@@ -222,7 +222,7 @@
               <span class="kpi-pill total">ทั้งหมด</span>
             </div>
             <div class="kpi-info">
-              <span class="kpi-label">สถานีระดับน้ำทั้งหมด</span>
+              <span class="kpi-label">สถานีวัดระดับน้ำทั้งหมด</span>
               <div class="kpi-value-row">
                 <span class="kpi-number" id="waterKpiTotal">0</span>
                 <span class="kpi-unit">สถานี</span>
@@ -284,7 +284,7 @@
               <span class="kpi-pill total">ทั้งหมด</span>
             </div>
             <div class="kpi-info">
-              <span class="kpi-label">สถานีน้ำฝนทั้งหมด</span>
+              <span class="kpi-label">สถานีวัดน้ำฝนทั้งหมด</span>
               <div class="kpi-value-row">
                 <span class="kpi-number" id="rainKpiTotal">0</span>
                 <span class="kpi-unit">สถานี</span>
@@ -346,7 +346,7 @@
             <button class="chip-btn" data-search="แม่น้ำชี">แม่น้ำชี</button>
             <button class="chip-btn" data-search="ลำเซบาย">ลำเซบาย</button>
             <button class="chip-btn" data-search="ลำโดมใหญ่">ลำโดมใหญ่</button>
-            <button class="chip-btn" data-search="โขงเจียม">โขงเจียม</button>
+            <button class="chip-btn" data-search="โขงเจียม">แม่น้ำโขง (โขงเจียม)</button>
           </div>
         </section>
 
@@ -397,7 +397,7 @@
                     <i data-lucide="play" class="icon-xs" id="radarPlayIcon"></i>
                   </button>
                   <div class="radar-time-info">
-                    <span class="radar-time-label">เวลาภาพ:</span>
+                    <span class="radar-time-label">เวลาเรดาร์:</span>
                     <span id="radarTimeDisplay" class="radar-time-val" aria-live="polite">กำลังโหลดภาพเรดาร์...</span>
                   </div>
                   <div class="radar-timeline-slider-wrap">
@@ -412,7 +412,7 @@
                 <div class="map-legend" id="waterMapLegend">
                   <h4><i data-lucide="waves" class="icon-xs"></i> สัญลักษณ์สถานีระดับน้ำ</h4>
                   <div class="legend-item"><span class="legend-pin red" aria-hidden="true"></span> น้ำล้นตลิ่ง (ท่วมเกินขอบตลิ่ง)</div>
-                  <div class="legend-item"><span class="legend-pin orange" aria-hidden="true"></span> เฝ้าระวัง (ปริ่มตลิ่งเหลือ ≤ 50 ซม.)</div>
+                  <div class="legend-item"><span class="legend-pin orange" aria-hidden="true"></span> เฝ้าระวัง (ต่ำกว่าตลิ่ง ≤ 50 ซม.)</div>
                   <div class="legend-item"><span class="legend-pin cyan" aria-hidden="true"></span> ระดับน้ำปกติ</div>
                 </div>
 
@@ -478,14 +478,14 @@
                   <thead>
                     <tr>
                       <th scope="col">รหัส</th>
-                      <th scope="col">ชื่อสถานี / แม่น้ำ</th>
+                      <th scope="col">ชื่อสถานี / ลำน้ำ</th>
                       <th scope="col">อำเภอ</th>
                       <th scope="col">ลุ่มน้ำ</th>
                       <th scope="col">ระดับน้ำ (ม.รทก.)</th>
-                      <th scope="col">ระดับตลิ่ง</th>
+                      <th scope="col">ระดับตลิ่ง (ม.รทก.)</th>
                       <th scope="col">ระยะพ้นตลิ่ง</th>
                       <th scope="col">สถานะ</th>
-                      <th scope="col">เวลาวัด</th>
+                      <th scope="col">เวลาตรวจวัด</th>
                       <th scope="col">กราฟ</th>
                     </tr>
                   </thead>
@@ -507,7 +507,7 @@
                       <th scope="col">ฝน 1 ชม. (มม.)</th>
                       <th scope="col">ฝนสะสม 24 ชม. (มม.)</th>
                       <th scope="col">ระดับความแรง</th>
-                      <th scope="col">เวลาวัด</th>
+                      <th scope="col">เวลาตรวจวัด</th>
                     </tr>
                   </thead>
                   <tbody id="rainTableBody">
@@ -532,18 +532,18 @@
           </div>
         </section>
 
-        <!-- ========== MAIN RIVERS CORRIDOR (5 แม่น้ำสายหลักเมืองอุบลฯ) ========== -->
-        <section class="river-corridor-section" id="riverCorridorSection" aria-label="สถานการณ์ 5 แม่น้ำสายหลัก">
+        <!-- ========== MAIN RIVERS CORRIDOR (5 ลำน้ำสายหลักเมืองอุบลฯ) ========== -->
+        <section class="river-corridor-section" id="riverCorridorSection" aria-label="สถานการณ์ 5 ลำน้ำสายหลัก">
           <div class="river-corridor-header">
             <div class="rc-title-wrap">
               <span class="rc-live-tag"><span class="rc-dot" aria-hidden="true"></span> จุดตรวจวัดสด</span>
-              <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
+              <h3>สถานการณ์ 5 ลำน้ำสายหลัก จ.อุบลราชธานี</h3>
             </div>
             <span class="rc-hint">คลิกเพื่อดูตำแหน่งบนแผนที่</span>
           </div>
           <div class="river-corridor-cards" id="riverCorridorCards">
             <!-- Populated by JavaScript with real station data -->
-            <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับแม่น้ำหลัก...</div>
+            <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับน้ำใน 5 ลำน้ำหลัก...</div>
           </div>
         </section>
 
@@ -591,7 +591,7 @@
             <span class="metric-unit">ม.รทก.</span>
           </div>
           <div class="metric-box">
-            <span class="metric-title">ระดับความสูงตลิ่ง</span>
+            <span class="metric-title">ระดับตลิ่ง</span>
             <span class="metric-num" id="modalMinBankMsl">-</span>
             <span class="metric-unit">ม.รทก.</span>
           </div>
@@ -680,13 +680,13 @@
     </div>
   </div>
 
-  <!-- ========== MODAL: สรุปภาพสถานการณ์แชร์โซเชียล (Snapshot Card Modal) ========== -->
-  <div class="modal-backdrop" id="snapshotModalBackdrop" role="dialog" aria-modal="true" aria-label="บันทึกภาพสรุปสถานการณ์">
+  <!-- ========== MODAL: ภาพสรุปสถานการณ์แชร์โซเชียล (Snapshot Card Modal) ========== -->
+  <div class="modal-backdrop" id="snapshotModalBackdrop" role="dialog" aria-modal="true" aria-label="ภาพสรุปสถานการณ์น้ำ">
     <div class="modal-card snapshot-modal-card">
       <div class="modal-header">
         <div class="modal-title-area">
-          <h2>📸 บันทึกภาพสรุปสถานการณ์น้ำ จ.อุบลราชธานี</h2>
-          <p class="modal-subtitle">บันทึกรูปภาพสรุปสถานการณ์ เพื่อส่งต่อใน LINE หรือ Facebook</p>
+          <h2>📸 ภาพสรุปสถานการณ์น้ำ จ.อุบลราชธานี</h2>
+          <p class="modal-subtitle">บันทึกรูปภาพเพื่อส่งต่อใน LINE หรือ Facebook</p>
         </div>
         <button class="icon-btn" id="btnCloseSnapshotModal" title="ปิดหน้าต่าง" aria-label="ปิดหน้าต่าง">&times;</button>
       </div>

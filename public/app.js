@@ -444,7 +444,7 @@ function updateKPIs() {
   animateNumber("rainKpiVeryHeavy", rainVeryHeavy);
   animateNumber("rainKpiHeavy", rainHeavy);
   animateNumber("rainKpiTotal", filteredRainfalls.length);
-  document.getElementById("rainKpiActiveCount").textContent = `พบฝนตก ${rainActiveCount.toLocaleString()} สถานี (${amphoeLabel})`;
+  document.getElementById("rainKpiActiveCount").textContent = `มีฝนตก ${rainActiveCount.toLocaleString()} สถานี (${amphoeLabel})`;
 
   if (maxRain) {
     document.getElementById("rainKpiMaxVal").textContent = Number(maxRain.rain24h).toFixed(1);
@@ -455,7 +455,7 @@ function updateKPIs() {
   }
 
   const nowStr = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-  document.getElementById("cacheStatusText").textContent = `อุบลฯ สด (${nowStr} น.)`;
+  document.getElementById("cacheStatusText").textContent = `ข้อมูลสด (${nowStr} น.)`;
 
   // Alert Banner
   const banner = document.getElementById("dangerAlertBanner");
@@ -536,7 +536,7 @@ function updateRiverCorridors() {
     },
     {
       id: "khong",
-      name: "โขงเจียม / ปากมูล",
+      name: "แม่น้ำโขง (โขงเจียม / ปากมูล)",
       icon: "🌅",
       keyMatcher: (w) => [740540, 3544].includes(w.station.id) || (w.station.amphoeNameTh && w.station.amphoeNameTh.includes("โขงเจียม")),
     }
@@ -592,7 +592,7 @@ function updateRiverCorridors() {
             <span class="rc-water-unit">ม.รทก.</span>
           </div>
           <div class="rc-freeboard-text ${statusClass}">
-            ${isOverflow ? 'ล้นตลิ่ง ' : 'เหลือ '}${fbText}
+            ${isOverflow ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}
           </div>
         </div>
 
@@ -650,13 +650,13 @@ function updateLeaderboards() {
     const trend = getTrendArrow(st.id, item.waterlevelMsl);
     const trendHtml = trend.arrow ? `<span class="${trend.cssClass}">${trend.arrow}</span> ` : "";
 
-    // สถานะเด่นบรรทัดแรก: ล้นตลิ่ง / เฝ้าระวัง HII / เหลือก่อนล้น
+    // สถานะเด่นบรรทัดแรก: ล้นตลิ่ง / ระดับเฝ้าระวัง / ต่ำกว่าตลิ่ง
     const hiiWarn = !isOverflow && item.situationLevel !== null && item.situationLevel >= 4;
     const statusText = isOverflow
       ? `ล้น ${fbText}`
       : hiiWarn
-        ? "เฝ้าระวัง HII"
-        : `เหลือ ${fbText}`;
+        ? "ระดับเฝ้าระวัง"
+        : `เหลืออีก ${fbText}`;
 
     const obsTime = item.observedAt
       ? new Date(item.observedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })
@@ -671,7 +671,7 @@ function updateLeaderboards() {
           <span class="sw-fb ${isOverflow ? 'danger' : 'warning'}">${statusText}</span>
         </div>
         <div class="sw-meta">
-          <span class="sw-sub">อ.${st.amphoeNameTh || "-"} • น้ำ ${trendHtml}${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"} ม. • ${obsTime} น.</span>
+          <span class="sw-sub">อ.${st.amphoeNameTh || "-"} • ระดับน้ำ ${trendHtml}${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"} ม. • ${obsTime} น.</span>
           <span class="sw-btn-group">
             <button class="sw-icon-btn" onclick="focusStationOnMap(${st.id})" title="ดูบนแผนที่" aria-label="ดู ${stationName} บนแผนที่">
               <i data-lucide="map-pin" class="icon-xs"></i>
@@ -788,7 +788,7 @@ function renderMapMarkers() {
         (item.situationLevel !== null && item.situationLevel >= 4)
       ) {
         markerColor = "#f59e0b"; // เฝ้าระวัง (orange)
-        statusText = item.freeboardM !== null ? `⚠️ เฝ้าระวัง (เหลืออีก ${fbText})` : `⚠️ เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
+        statusText = item.freeboardM !== null ? `⚠️ เฝ้าระวัง (ต่ำกว่าตลิ่งอีก ${fbText})` : `⚠️ ระดับเฝ้าระวัง (ระดับ ${item.situationLevel ?? 4})`;
       } else {
         statusText = "✅ ระดับน้ำปกติ";
       }
@@ -826,7 +826,7 @@ function renderMapMarkers() {
               <span class="pdv" style="color:#0369a1;">${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"}</span>
             </div>
             <div class="popup-data-item">
-              <span class="pdl">ระดับตลิ่ง</span>
+              <span class="pdl">ระดับตลิ่ง (ม.รทก.)</span>
               <span class="pdv">${item.minBankMsl !== null ? item.minBankMsl.toFixed(2) : "-"}</span>
             </div>
             <div class="popup-data-item">
@@ -937,7 +937,7 @@ function renderMapMarkers() {
               <span class="pdv" style="color:#2563eb;">${item.rain24h !== null ? item.rain24h.toFixed(1) : '-'} มม.</span>
             </div>
             <div class="popup-data-item" style="grid-column:span 2;">
-              <span class="pdl">เวลาวัด</span>
+              <span class="pdl">เวลาตรวจวัด</span>
               <span class="pdv" style="font-size:0.85rem; color:#475569;">${obsTime} น.</span>
             </div>
           </div>
@@ -1110,7 +1110,7 @@ function checkNearbyRisk() {
   const grid = document.getElementById("gpsResultsGrid");
 
   if (!navigator.geolocation) {
-    alert("อุปกรณ์หรือเบราว์เซอร์ของคุณไม่รองรับ Geolocation");
+    alert("อุปกรณ์หรือเบราว์เซอร์ของคุณไม่รองรับการระบุตำแหน่ง (Geolocation)");
     return;
   }
 
@@ -1181,17 +1181,17 @@ function processUserLocation(uLat, uLon) {
   let riskText = "✅ ระดับน้ำปกติ: จุดตรวจวัดใกล้เคียงยังอยู่ในเกณฑ์ปลอดภัย";
   if (closestWater && closestWater.freeboardM !== null && closestWater.freeboardM < 0) {
     overallRisk = "danger";
-    riskText = "🚨 จุดเสี่ยงสูง! สถานีวัดน้ำใกล้คุณมีระดับน้ำเอ่อล้นตลิ่งแล้ว";
+    riskText = "🚨 จุดเสี่ยงสูง! สถานีวัดระดับน้ำใกล้คุณมีระดับน้ำเอ่อล้นตลิ่งแล้ว";
   } else if (closestWater && closestWater.freeboardM !== null && closestWater.freeboardM <= 0.5) {
     overallRisk = "warning";
-    riskText = "⚠️ ควรเฝ้าระวัง: สถานีวัดน้ำใกล้คุณมีระดับน้ำสูงปริ่มตลิ่ง";
+    riskText = "⚠️ ควรเฝ้าระวัง: สถานีวัดระดับน้ำใกล้คุณมีระดับน้ำสูงใกล้ตลิ่ง";
   } else if (closestRain && (closestRain.rain24h ?? 0) >= 90) {
     overallRisk = "danger";
     riskText = "🚨 มีฝนตกหนักมากในบริเวณใกล้เคียง อาจเกิดน้ำท่วมขัง";
   }
 
   title.textContent = riskText;
-  sub.textContent = `จุดที่คุณอยู่ • สรุปข้อมูลจากสถานีตรวจวัดที่อยู่ใกล้คุณที่สุด`;
+  sub.textContent = `ตำแหน่งของคุณ • สรุปข้อมูลจากสถานีตรวจวัดที่ใกล้ที่สุด`;
 
   let html = "";
 
@@ -1212,7 +1212,7 @@ function processUserLocation(uLat, uLon) {
             <small style="color:var(--text-muted);">ม.รทก.</small>
           </div>
           <span class="gps-status-pill ${isOver ? 'danger' : closestWater.freeboardM <= 0.5 ? 'warning' : 'safe'}">
-            ${isOver ? 'ล้นตลิ่ง ' : 'เหลือ '}${fbText}
+            ${isOver ? 'ล้นตลิ่ง ' : 'ต่ำกว่าตลิ่ง '}${fbText}
           </span>
         </div>
       </div>
@@ -1224,7 +1224,7 @@ function processUserLocation(uLat, uLon) {
     html += `
       <div class="gps-item-card" onclick="focusStationOnMap(${closestRain.station.id})">
         <div class="gps-item-top">
-          <span class="gps-type-tag">🌧️ จุดวัดน้ำฝนใกล้ที่สุด</span>
+          <span class="gps-type-tag">🌧️ สถานีวัดน้ำฝนใกล้ที่สุด</span>
           <span class="gps-dist-badge">${minRainDist.toFixed(1)} กม.</span>
         </div>
         <div class="gps-item-name">${closestRain.station.nameTh || "สถานี " + closestRain.station.id}</div>
@@ -1278,14 +1278,14 @@ function processUserLocation(uLat, uLon) {
     <div class="map-popup-card user-loc-popup">
       <div class="popup-header">
         <span class="popup-tag" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">
-          📍 จุดที่คุณอยู่
+          📍 ตำแหน่งของคุณ
         </span>
         <h4>ตำแหน่งของคุณ</h4>
         <p class="popup-loc">${uLat.toFixed(4)}, ${uLon.toFixed(4)}</p>
       </div>
       <div class="popup-data-grid" style="margin-bottom:4px;">
         <div class="popup-data-item">
-          <span class="pdl">สถานีวัดน้ำใกล้ที่สุด</span>
+          <span class="pdl">สถานีวัดระดับน้ำใกล้ที่สุด</span>
           <span class="pdv" style="font-size:0.82rem; color:#0369a1;" title="${closestWater?.station.nameTh || '-'}">
             ${closestWater ? (closestWater.station.nameTh || 'สถานี ' + closestWater.station.id) : '-'}
           </span>
@@ -1421,7 +1421,7 @@ function drawCrossSection() {
   const capValEl = document.getElementById("csCapacityVal");
   const capBadgeEl = document.getElementById("csCapacityBadge");
   if (capValEl && capBadgeEl) {
-    capValEl.textContent = `${capacityPct}% (${isOverflow ? 'น้ำเอ่อล้นตลิ่ง' : isWarning ? 'ปริ่มตลิ่ง' : 'ปกติ'})`;
+    capValEl.textContent = `${capacityPct}% (${isOverflow ? 'น้ำเอ่อล้นตลิ่ง' : isWarning ? 'ใกล้ตลิ่ง' : 'ปกติ'})`;
     capBadgeEl.className = `cs-capacity-badge ${isOverflow ? 'overflow' : isWarning ? 'warning' : ''}`;
   }
 
@@ -1968,7 +1968,7 @@ function generateSnapshotCard() {
   const barH = 50;
   let verdictBg = "rgba(16, 185, 129, 0.12)";
   let verdictBorder = "rgba(16, 185, 129, 0.35)";
-  let verdictText = `✅ ภาพรวมสถานการณ์: ระดับน้ำในแม่น้ำสายหลักยังอยู่ในเกณฑ์ปกติ สภาพอากาศทั่วไปปกติ`;
+  let verdictText = `✅ ภาพรวมสถานการณ์: ระดับน้ำในลำน้ำสายหลักยังอยู่ในเกณฑ์ปกติ ไม่พบพื้นที่เสี่ยงน้ำท่วม`;
   let verdictColor = "#10b981";
 
   if (overflowCount > 0) {
@@ -1979,7 +1979,7 @@ function generateSnapshotCard() {
   } else if (warningCount > 0) {
     verdictBg = "rgba(245, 158, 11, 0.15)";
     verdictBorder = "rgba(245, 158, 11, 0.45)";
-    verdictText = `⚠️ แจ้งเตือน: ระดับน้ำเริ่มสูงปริ่มตลิ่ง ${warningCount} สถานี ยังไม่พบจุดน้ำล้นตลิ่ง แต่ควรเฝ้าระวังสถานการณ์ต่อเนื่อง`;
+    verdictText = `⚠️ แจ้งเตือน: ระดับน้ำเริ่มสูงใกล้ตลิ่ง ${warningCount} สถานี ยังไม่พบจุดน้ำล้นตลิ่ง แต่ควรเฝ้าระวังสถานการณ์ต่อเนื่อง`;
     verdictColor = "#f59e0b";
   }
 
@@ -2434,7 +2434,7 @@ function renderWaterTablePage() {
 
       let statusBadge = `<span class="status-tag normal">ปกติ</span>`;
       if (item.freeboardM !== null && item.freeboardM < 0) {
-        statusBadge = `<span class="status-tag overflow">ล้นตลิ่ง (-${fbText})</span>`;
+        statusBadge = `<span class="status-tag overflow">ล้นตลิ่ง (${fbText})</span>`;
       } else if (
         (item.freeboardM !== null && item.freeboardM <= 0.5) ||
         (item.situationLevel !== null && item.situationLevel >= 4)
@@ -2837,14 +2837,14 @@ function setupEventListeners() {
     simOffsetM = parseFloat(e.target.value);
     const sign = simOffsetM >= 0 ? "+" : "";
     if (simBadge) {
-      simBadge.textContent = `${sign}${simOffsetM.toFixed(2)} ม. ${simOffsetM === 0 ? '(ค่าจริง)' : '(จำลอง)'}`;
+      simBadge.textContent = `${sign}${simOffsetM.toFixed(2)} ม. ${simOffsetM === 0 ? '(ระดับจริง)' : '(จำลอง)'}`;
     }
   });
 
   btnResetSim?.addEventListener("click", () => {
     simOffsetM = 0;
     if (simSlider) simSlider.value = "0";
-    if (simBadge) simBadge.textContent = "+0.00 ม. (ค่าจริง)";
+    if (simBadge) simBadge.textContent = "+0.00 ม. (ระดับจริง)";
   });
 
   // Chart Range Buttons
