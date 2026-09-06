@@ -428,7 +428,13 @@
 
       if (item.observedAt) {
         const d = new Date(item.observedAt);
-        document.getElementById("obsTime").textContent = `อัปเดตล่าสุด: ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} น.`;
+        const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+        const day = d.getDate();
+        const month = thaiMonths[d.getMonth()];
+        const yearBE = d.getFullYear() + 543;
+        const hour = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        document.getElementById("obsTime").textContent = `อัปเดต: ${day} ${month} ${yearBE} • ${hour}:${min} น.`;
       }
     }
 
