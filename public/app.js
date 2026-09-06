@@ -1019,8 +1019,6 @@ function toggleRadar(forceState) {
   const radarBtn = document.getElementById("btnToggleRadar");
   const radarNavBtn = document.getElementById("btnToggleRadarNav");
   const playerBar = document.getElementById("radarPlayerBar");
-  const waterMapLegend = document.getElementById("waterMapLegend");
-  const rainMapLegend = document.getElementById("rainMapLegend");
 
   const willEnable = forceState !== undefined ? forceState : !radarLayer;
 
@@ -1034,10 +1032,6 @@ function toggleRadar(forceState) {
       radarNavBtn.setAttribute("aria-pressed", "true");
     }
     if (playerBar) playerBar.classList.remove("hidden");
-
-    // ซ่อนสัญลักษณ์สถานี (Legend) เมื่อเปิดดูเรดาร์กลุ่มฝน เพื่อไม่ให้บังแผนที่
-    if (rainMapLegend) rainMapLegend.classList.add("hidden");
-    if (waterMapLegend) waterMapLegend.classList.add("hidden");
 
     // ซ่อน Markers ทั้งหมดบนแผนที่เพื่อดูเรดาร์กลุ่มฝนได้อย่างชัดเจน
     if (map && markerClusterGroup && map.hasLayer(markerClusterGroup)) {
@@ -1069,10 +1063,6 @@ function toggleRadar(forceState) {
     if (map && markerClusterGroup && !map.hasLayer(markerClusterGroup)) {
       map.addLayer(markerClusterGroup);
     }
-
-    // แสดงสัญลักษณ์สถานี (Legend) กลับมาตามโหมดที่เปิดอยู่ (น้ำ / ฝน)
-    if (waterMapLegend) waterMapLegend.classList.toggle("hidden", currentMode !== "water");
-    if (rainMapLegend) rainMapLegend.classList.toggle("hidden", currentMode !== "rain");
   }
 }
 
@@ -2579,9 +2569,6 @@ function setupEventListeners() {
   const waterFilterPills = document.getElementById("waterFilterPills");
   const rainFilterPills = document.getElementById("rainFilterPills");
 
-  const waterMapLegend = document.getElementById("waterMapLegend");
-  const rainMapLegend = document.getElementById("rainMapLegend");
-
   const waterLeaderCard = document.getElementById("waterLeaderCard");
   const rainLeaderCard = document.getElementById("rainLeaderCard");
 
@@ -2599,10 +2586,6 @@ function setupEventListeners() {
 
     waterFilterPills.classList.toggle("hidden", newMode !== "water");
     rainFilterPills.classList.toggle("hidden", newMode !== "rain");
-
-    const isRadarActive = Boolean(radarLayer);
-    waterMapLegend.classList.toggle("hidden", newMode !== "water" || isRadarActive);
-    rainMapLegend.classList.toggle("hidden", newMode !== "rain" || isRadarActive);
 
     waterLeaderCard.classList.toggle("hidden", newMode !== "water");
     rainLeaderCard.classList.toggle("hidden", newMode !== "rain");

@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
 </head>
 <body>
   <div class="app-shell">
@@ -407,24 +407,6 @@
                     <i data-lucide="x" class="icon-xs"></i>
                   </button>
                 </div>
-
-                <!-- Legend Water -->
-                <div class="map-legend" id="waterMapLegend">
-                  <h4><i data-lucide="waves" class="icon-xs"></i> สัญลักษณ์สถานีระดับน้ำ</h4>
-                  <div class="legend-item"><span class="legend-pin red" aria-hidden="true"></span> น้ำล้นตลิ่ง (ท่วมเกินขอบตลิ่ง)</div>
-                  <div class="legend-item"><span class="legend-pin orange" aria-hidden="true"></span> เฝ้าระวัง (ต่ำกว่าตลิ่ง ≤ 50 ซม.)</div>
-                  <div class="legend-item"><span class="legend-pin cyan" aria-hidden="true"></span> ระดับน้ำปกติ</div>
-                </div>
-
-                <!-- Legend Rain -->
-                <div class="map-legend hidden" id="rainMapLegend">
-                  <h4><i data-lucide="cloud-rain" class="icon-xs"></i> สัญลักษณ์สถานีวัดน้ำฝน (24 ชม.)</h4>
-                  <div class="legend-item"><span class="legend-pin red" aria-hidden="true"></span> ฝนหนักมาก (≥ 90 มม.)</div>
-                  <div class="legend-item"><span class="legend-pin orange" aria-hidden="true"></span> ฝนหนัก (35–90 มม.)</div>
-                  <div class="legend-item"><span class="legend-pin green" aria-hidden="true"></span> ฝนปานกลาง (10–35 มม.)</div>
-                  <div class="legend-item"><span class="legend-pin blue" aria-hidden="true"></span> ฝนเล็กน้อย (0–10 มม.)</div>
-                  <div class="legend-item"><span class="legend-pin gray" aria-hidden="true"></span> ไม่มีฝน</div>
-                </div>
               </div>
 
               <!-- Sidebar Leaderboards -->
@@ -745,7 +727,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

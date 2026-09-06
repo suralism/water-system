@@ -976,54 +976,6 @@ img, canvas, svg { max-width: 100%; }
   cursor: pointer;
 }
 
-/* Map legend */
-.map-legend {
-  position: absolute;
-  right: 12px;
-  bottom: 14px;
-  z-index: 15;
-  min-width: 190px;
-  max-width: 250px;
-  padding: 11px 13px;
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--border-1);
-  box-shadow: var(--shadow-2);
-}
-.map-legend h4 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.74rem;
-  font-weight: 800;
-  margin-bottom: 7px;
-  color: var(--text-1);
-}
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.72rem;
-  color: var(--text-2);
-  padding: 2px 0;
-}
-.legend-pin {
-  width: 10px;
-  height: 10px;
-  flex-shrink: 0;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  box-shadow: var(--shadow-1);
-}
-.legend-pin.red { background: #ef4444; }
-.legend-pin.orange { background: #f97316; }
-.legend-pin.cyan { background: #06b6d4; }
-.legend-pin.green { background: #10b981; }
-.legend-pin.blue { background: #3b82f6; }
-.legend-pin.gray { background: #94a3b8; }
-
 /* Leaderboards */
 .sidebar-leaderboards {
   display: flex;
@@ -2025,7 +1977,6 @@ img, canvas, svg { max-width: 100%; }
   .river-chips-bar { flex-basis: auto; }
 
   .map-wrapper { min-height: 65vh; }
-  .map-legend { min-width: 150px; max-width: 46vw; padding: 9px 10px; }
   .map-floating-toolbar { left: 8px; right: 8px; top: 8px; }
   .map-layer-btn span { display: none; }
   .map-control-action span:not(.radar-badge) { display: none; }
