@@ -2078,7 +2078,8 @@ img, canvas, svg { max-width: 100%; }
     padding: 6px 8px;
   }
   .map-layer-btn span { display: none; }
-  .map-control-action span:not(.radar-badge) { display: none; }
+  .map-control-action:not(.radar-toggle-btn) span { display: none; }
+  .radar-toggle-btn span { font-size: 0.75rem; }
 
   #map {
     position: relative;
