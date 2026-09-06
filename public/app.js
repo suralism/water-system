@@ -1058,8 +1058,14 @@ function toggleRadar(forceState) {
   const willEnable = forceState !== undefined ? forceState : !radarLayer;
 
   if (willEnable) {
-    if (radarBtn) radarBtn.classList.add("active");
-    if (radarNavBtn) radarNavBtn.classList.add("active");
+    if (radarBtn) {
+      radarBtn.classList.add("active");
+      radarBtn.setAttribute("aria-pressed", "true");
+    }
+    if (radarNavBtn) {
+      radarNavBtn.classList.add("active");
+      radarNavBtn.setAttribute("aria-pressed", "true");
+    }
     if (playerBar) playerBar.classList.remove("hidden");
 
     // ซ่อนสัญลักษณ์สถานี (Legend) เมื่อเปิดดูเรดาร์กลุ่มฝน เพื่อไม่ให้บังแผนที่
@@ -1077,8 +1083,14 @@ function toggleRadar(forceState) {
       updateRadarDisplay();
     }
   } else {
-    if (radarBtn) radarBtn.classList.remove("active");
-    if (radarNavBtn) radarNavBtn.classList.remove("active");
+    if (radarBtn) {
+      radarBtn.classList.remove("active");
+      radarBtn.setAttribute("aria-pressed", "false");
+    }
+    if (radarNavBtn) {
+      radarNavBtn.classList.remove("active");
+      radarNavBtn.setAttribute("aria-pressed", "false");
+    }
     if (playerBar) playerBar.classList.add("hidden");
     if (radarLayer) {
       map.removeLayer(radarLayer);
@@ -1391,6 +1403,7 @@ async function openWaterModal(stationId) {
   }
 
   document.getElementById("stationModalBackdrop").classList.add("open");
+  document.getElementById("btnCloseModal")?.focus();
 
   // เริ่มโหลดกราฟและเตรียมแบบจำลอง 2D
   await loadStationGraph();
@@ -1603,6 +1616,7 @@ function getAppLogoImage() {
 
 async function openSnapshotModal() {
   document.getElementById("snapshotModalBackdrop").classList.add("open");
+  document.getElementById("btnCloseSnapshotModal")?.focus();
   await getAppLogoImage();
   generateSnapshotCard();
 }
@@ -2425,14 +2439,10 @@ function renderTable() {
   document.getElementById("tableRainCount").textContent = filteredRainfalls.length.toLocaleString();
 
   if (currentMode === "water") {
-    document.getElementById("tabWaterLevel").classList.add("active");
-    document.getElementById("tabRainfall").classList.remove("active");
     document.getElementById("waterTableContainer").classList.remove("hidden");
     document.getElementById("rainTableContainer").classList.add("hidden");
     renderWaterTablePage();
   } else {
-    document.getElementById("tabRainfall").classList.add("active");
-    document.getElementById("tabWaterLevel").classList.remove("active");
     document.getElementById("rainTableContainer").classList.remove("hidden");
     document.getElementById("waterTableContainer").classList.add("hidden");
     renderRainTablePage();
@@ -2603,6 +2613,8 @@ function setupEventListeners() {
 
     modeBtnWater.classList.toggle("active", newMode === "water");
     modeBtnRain.classList.toggle("active", newMode === "rain");
+    modeBtnWater.setAttribute("aria-pressed", String(newMode === "water"));
+    modeBtnRain.setAttribute("aria-pressed", String(newMode === "rain"));
 
     waterKpiGrid.classList.toggle("hidden", newMode !== "water");
     rainKpiGrid.classList.toggle("hidden", newMode !== "rain");
@@ -2663,6 +2675,8 @@ function setupEventListeners() {
   // Map Layer Buttons
   document.querySelectorAll(".map-layer-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
+      document.querySelectorAll(".map-layer-btn").forEach((b) => b.setAttribute("aria-pressed", "false"));
+      btn.setAttribute("aria-pressed", "true");
       switchBaseLayer(btn.dataset.layer);
     });
   });
@@ -2733,8 +2747,12 @@ function setupEventListeners() {
   // Filter Pills
   document.querySelectorAll("#waterFilterPills .pill").forEach((pill) => {
     pill.addEventListener("click", () => {
-      document.querySelectorAll("#waterFilterPills .pill").forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll("#waterFilterPills .pill").forEach((p) => {
+        p.classList.remove("active");
+        p.setAttribute("aria-pressed", "false");
+      });
       pill.classList.add("active");
+      pill.setAttribute("aria-pressed", "true");
       currentWaterFilter = pill.dataset.filter;
       currentPage = 1;
       applyFilters();
@@ -2743,8 +2761,12 @@ function setupEventListeners() {
 
   document.querySelectorAll("#rainFilterPills .pill").forEach((pill) => {
     pill.addEventListener("click", () => {
-      document.querySelectorAll("#rainFilterPills .pill").forEach((p) => p.classList.remove("active"));
+      document.querySelectorAll("#rainFilterPills .pill").forEach((p) => {
+        p.classList.remove("active");
+        p.setAttribute("aria-pressed", "false");
+      });
       pill.classList.add("active");
+      pill.setAttribute("aria-pressed", "true");
       currentRainFilter = pill.dataset.filter;
       currentPage = 1;
       applyFilters();
@@ -2760,6 +2782,8 @@ function setupEventListeners() {
   btnMap.addEventListener("click", () => {
     btnMap.classList.add("active");
     btnTable.classList.remove("active");
+    btnMap.setAttribute("aria-pressed", "true");
+    btnTable.setAttribute("aria-pressed", "false");
     mapContainer.classList.add("active");
     tableContainer.classList.remove("active");
     currentView = "map";
@@ -2769,15 +2793,19 @@ function setupEventListeners() {
   btnTable.addEventListener("click", () => {
     btnTable.classList.add("active");
     btnMap.classList.remove("active");
+    btnTable.setAttribute("aria-pressed", "true");
+    btnMap.setAttribute("aria-pressed", "false");
     tableContainer.classList.add("active");
     mapContainer.classList.remove("active");
     currentView = "table";
     renderTable();
   });
 
-  // Table Tabs
-  document.getElementById("tabWaterLevel").addEventListener("click", () => switchMode("water"));
-  document.getElementById("tabRainfall").addEventListener("click", () => switchMode("rain"));
+  // Sidebar: เลื่อนไปหมวด 5 แม่น้ำสายหลัก
+  document.getElementById("btnNavRivers")?.addEventListener("click", () => {
+    closeSidebar();
+    document.getElementById("riverCorridorSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 
   // Pagination
   document.getElementById("btnPrevPage").addEventListener("click", () => {
@@ -2855,8 +2883,12 @@ function setupEventListeners() {
   // Chart Range Buttons
   document.querySelectorAll(".btn-range").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".btn-range").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".btn-range").forEach((b) => {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
       btn.classList.add("active");
+      btn.setAttribute("aria-pressed", "true");
       chartRangeDays = Number(btn.dataset.days);
       loadStationGraph();
     });
@@ -2882,8 +2914,90 @@ function setupEventListeners() {
         const bothBtn = document.querySelector('.btn-compare-year[data-year="both"]');
         bothBtn?.classList.toggle("active", compareYears.length === FLOOD_YEARS.length);
       }
+      document.querySelectorAll(".btn-compare-year").forEach((b) =>
+        b.setAttribute("aria-pressed", String(b.classList.contains("active")))
+      );
       loadStationGraph();
     });
+  });
+
+  // ===== Sidebar drawer (จอเล็ก) & Bottom sheet ตัวกรอง =====
+  const sidebarToggle = document.getElementById("btnSidebarToggle");
+
+  function closeSidebar() {
+    document.body.classList.remove("sidebar-open");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    if (backdrop) backdrop.hidden = true;
+    sidebarToggle?.setAttribute("aria-expanded", "false");
+  }
+
+  sidebarToggle?.addEventListener("click", () => {
+    document.body.classList.add("sidebar-open");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    if (backdrop) backdrop.hidden = false;
+    sidebarToggle.setAttribute("aria-expanded", "true");
+  });
+  document.getElementById("btnSidebarClose")?.addEventListener("click", closeSidebar);
+  document.getElementById("sidebarBackdrop")?.addEventListener("click", closeSidebar);
+
+  const filterToggle = document.getElementById("btnToggleFilters");
+  filterToggle?.addEventListener("click", () => {
+    const open = document.body.classList.toggle("filters-open");
+    filterToggle.setAttribute("aria-expanded", String(open));
+  });
+
+  // ปิด bottom sheet ตัวกรองเมื่อเลือก filter เสร็จ (จอเล็ก)
+  document.getElementById("controlsBar")?.addEventListener("click", (e) => {
+    if (!e.target.closest("button, select, input") || e.target.closest("#btnClearSearch")) return;
+    if (window.innerWidth <= 768 && document.body.classList.contains("filters-open")) {
+      if (e.target.closest(".pill") || e.target.closest(".chip-btn")) {
+        document.body.classList.remove("filters-open");
+        filterToggle?.setAttribute("aria-expanded", "false");
+      }
+    }
+  });
+
+  document.getElementById("btnTopRefresh")?.addEventListener("click", () => {
+    document.getElementById("btnRefresh")?.click();
+  });
+
+  // ===== Keyboard: Escape ปิด modal → bottom sheet → drawer + Focus trap ใน modal =====
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const openBackdrop = document.querySelector(".modal-backdrop.open");
+      if (openBackdrop) {
+        if (openBackdrop.id === "stationModalBackdrop") closeModal();
+        else openBackdrop.classList.remove("open");
+        return;
+      }
+      if (document.body.classList.contains("filters-open")) {
+        document.body.classList.remove("filters-open");
+        filterToggle?.setAttribute("aria-expanded", "false");
+        return;
+      }
+      if (document.body.classList.contains("sidebar-open")) closeSidebar();
+    }
+
+    if (e.key === "Tab") {
+      const openBackdrop = document.querySelector(".modal-backdrop.open");
+      if (!openBackdrop) return;
+      const focusables = openBackdrop.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (!openBackdrop.contains(document.activeElement)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
 }
 
