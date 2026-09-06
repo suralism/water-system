@@ -1113,59 +1113,80 @@ img, canvas, svg { max-width: 100%; }
 .leader-val.rain { color: var(--rain-color); }
 .leader-sub { font-size: 0.64rem; color: var(--text-3); }
 
-.sidebar-warning-box {
+/* การ์ดสถานีเฝ้าระวัง/ล้นตลิ่ง — กระชับ 2 บรรทัด */
+.sw-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   border: 1px solid var(--border-1);
-  border-radius: var(--r-md);
+  border-left: 3px solid var(--border-2);
+  border-radius: 10px;
   background: var(--bg-subtle);
-  padding: 11px 12px;
-  margin: 4px;
+  padding: 8px 11px;
+  margin: 3px 4px;
+  transition: background var(--t-fast), border-color var(--t-fast);
 }
-.sidebar-warning-box.danger { border-color: var(--danger-border); background: var(--danger-bg); }
-.sidebar-warning-box.warning { border-color: var(--warning-border); background: var(--warning-bg); }
+.sw-card:hover { background: var(--bg-inset); }
+.sw-card.danger { border-left-color: var(--danger); }
+.sw-card.warning { border-left-color: var(--warning); }
 
-.sw-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.sw-title { font-size: 0.85rem; font-weight: 800; color: var(--text-1); }
-.sw-sub { font-size: 0.7rem; color: var(--text-3); }
-.sw-pill {
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 9px;
-  border-radius: var(--r-full);
+.sw-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sw-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.sw-pill.danger { background: var(--danger); color: #fff; }
-.sw-pill.warning { background: var(--warning); color: #fff; }
-
-.sw-metrics-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-bottom: 9px;
+.sw-fb {
+  flex-shrink: 0;
+  font-size: 0.84rem;
+  font-weight: 800;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
-.sw-metric-item { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.sw-m-label { font-size: 0.62rem; font-weight: 600; color: var(--text-3); }
-.sw-m-val { font-size: 0.86rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.sw-m-val.blue { color: var(--brand-primary); }
-.sw-m-val.danger { color: var(--danger); }
-.sw-m-val.warning { color: var(--warning); }
+.sw-fb.danger { color: var(--danger-text); }
+.sw-fb.warning { color: var(--warning-text); }
 
-.sw-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sw-time { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; color: var(--text-3); }
-.sw-btn-group { display: flex; gap: 6px; }
-.sw-btn {
+.sw-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sw-sub {
+  font-size: 0.71rem;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sw-btn-group { display: flex; gap: 5px; }
+.sw-icon-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 9px;
-  border: none;
-  border-radius: var(--r-sm);
-  font-size: 0.7rem;
-  font-weight: 700;
-  transition: filter var(--t-fast);
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-1);
+  border-radius: 7px;
+  background: var(--bg-card);
+  color: var(--text-3);
+  font-size: 13px;
+  transition: all var(--t-fast);
 }
-.sw-btn:hover { filter: brightness(1.1); }
-.sw-btn-map { background: var(--brand-primary); color: #fff; }
-.sw-btn-graph { background: var(--bg-inset); color: var(--text-2); border: 1px solid var(--border-1); }
+.sw-icon-btn:hover {
+  border-color: var(--brand-bright);
+  color: var(--brand-primary);
+  background: var(--brand-soft);
+}
 
 .sidebar-allclear {
   display: flex;
@@ -1946,7 +1967,6 @@ img, canvas, svg { max-width: 100%; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .sidebar-leaderboards { grid-template-columns: 1fr; }
   .gps-results-grid { grid-template-columns: 1fr; }
-  .sw-metrics-row { gap: 5px; }
   .pagination-bar { flex-wrap: wrap; }
 }
 

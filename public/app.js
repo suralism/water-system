@@ -649,57 +649,37 @@ function updateLeaderboards() {
     const fbText = formatFreeboard(item.freeboardM, { absOnly: true });
     const trend = getTrendArrow(st.id, item.waterlevelMsl);
     const trendHtml = trend.arrow ? `<span class="${trend.cssClass}">${trend.arrow}</span> ` : "";
-    
-    let statusText = "";
-    if (isOverflow) {
-      statusText = `ล้นตลิ่ง ${fbText}`;
-    } else if (item.freeboardM !== null && item.freeboardM <= 0.5) {
-      statusText = `เฝ้าระวัง (เหลือ ${fbText})`;
-    } else {
-      statusText = `เตือนภัย HII (ระดับ ${item.situationLevel ?? 4})`;
-    }
+
+    // สถานะเด่นบรรทัดแรก: ล้นตลิ่ง / เฝ้าระวัง HII / เหลือก่อนล้น
+    const hiiWarn = !isOverflow && item.situationLevel !== null && item.situationLevel >= 4;
+    const statusText = isOverflow
+      ? `ล้น ${fbText}`
+      : hiiWarn
+        ? "เฝ้าระวัง HII"
+        : `เหลือ ${fbText}`;
 
     const obsTime = item.observedAt
       ? new Date(item.observedAt).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })
       : "-";
 
-    const diffText = item.freeboardM !== null ? (isOverflow ? `ล้น ${fbText}` : `เหลือ ${fbText}`) : "-";
+    const stationName = st.nameTh || `สถานี ${st.id}`;
 
     return `
-      <div class="sidebar-warning-box ${isOverflow ? 'danger' : 'warning'}">
-        <div class="sw-header">
-          <div>
-            <div class="sw-title">${st.nameTh || "สถานี " + st.id}</div>
-            <div class="sw-sub">อ.${st.amphoeNameTh || "-"} • ${st.basinNameTh || "-"}</div>
-          </div>
-          <span class="sw-pill ${isOverflow ? 'danger' : 'warning'}">${statusText}</span>
+      <div class="sw-card ${isOverflow ? 'danger' : 'warning'}">
+        <div class="sw-top">
+          <span class="sw-name" title="${stationName}">${stationName}</span>
+          <span class="sw-fb ${isOverflow ? 'danger' : 'warning'}">${statusText}</span>
         </div>
-
-        <div class="sw-metrics-row">
-          <div class="sw-metric-item">
-            <span class="sw-m-label">ระดับน้ำจริง</span>
-            <span class="sw-m-val blue">${trendHtml}${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"}</span>
-          </div>
-          <div class="sw-metric-item">
-            <span class="sw-m-label">ระดับตลิ่ง</span>
-            <span class="sw-m-val">${item.minBankMsl !== null ? item.minBankMsl.toFixed(2) : "-"}</span>
-          </div>
-          <div class="sw-metric-item">
-            <span class="sw-m-label">ระยะพ้นตลิ่ง</span>
-            <span class="sw-m-val ${isOverflow ? 'danger' : 'warning'}">${diffText}</span>
-          </div>
-        </div>
-
-        <div class="sw-actions">
-          <span class="sw-time"><i data-lucide="clock" class="icon-xs"></i> ${obsTime} น.</span>
-          <div class="sw-btn-group">
-            <button class="sw-btn sw-btn-map" onclick="focusStationOnMap(${st.id})">
-              <i data-lucide="map-pin" class="icon-xs"></i> แผนที่
+        <div class="sw-meta">
+          <span class="sw-sub">อ.${st.amphoeNameTh || "-"} • น้ำ ${trendHtml}${item.waterlevelMsl !== null ? item.waterlevelMsl.toFixed(2) : "-"} ม. • ${obsTime} น.</span>
+          <span class="sw-btn-group">
+            <button class="sw-icon-btn" onclick="focusStationOnMap(${st.id})" title="ดูบนแผนที่" aria-label="ดู ${stationName} บนแผนที่">
+              <i data-lucide="map-pin" class="icon-xs"></i>
             </button>
-            <button class="sw-btn sw-btn-graph" onclick="openWaterModal(${st.id})">
-              <i data-lucide="waves" class="icon-xs"></i> กราฟ & ภาพจำลอง
+            <button class="sw-icon-btn" onclick="openWaterModal(${st.id})" title="กราฟ &amp; ภาพจำลอง" aria-label="เปิดกราฟ ${stationName}">
+              <i data-lucide="waves" class="icon-xs"></i>
             </button>
-          </div>
+          </span>
         </div>
       </div>
     `;
