@@ -168,10 +168,12 @@ function initMap() {
     center: UBON_COORDS,
     zoom: 9.5,
     zoomControl: false,
-    attributionControl: {
-      prefix: false, // ตัดคำว่า "Leaflet |" ออกเพื่อความสะอาดตา
-    },
   });
+
+  // ตัดคำว่า "Leaflet |" ออกอย่างสมบูรณ์
+  if (map.attributionControl) {
+    map.attributionControl.setPrefix(false);
+  }
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
@@ -222,9 +224,56 @@ function initMap() {
 
   map.addLayer(markerClusterGroup);
 
+  // ติดปุ่มไอคอน (i) ให้ Leaflet Attribution ยุบได้เป็นปุ่มเล็ก ไม่รกสายตา
+  setupCollapsibleAttribution();
+
   setTimeout(() => {
     if (map) map.invalidateSize();
   }, 250);
+}
+
+/**
+ * ทำให้ Leaflet Attribution เป็นปุ่ม (i) กดยุบ/ขยายได้
+ */
+function setupCollapsibleAttribution() {
+  const attrEl = document.querySelector(".leaflet-control-attribution");
+  if (!attrEl) return;
+
+  // ป้องกันการ bind ซ้ำ
+  if (attrEl.querySelector(".attr-toggle-btn")) return;
+
+  const btn = document.createElement("button");
+  btn.className = "attr-toggle-btn";
+  btn.type = "button";
+  btn.setAttribute("aria-label", "ข้อมูลลิขสิทธิ์แผนที่");
+  btn.setAttribute("title", "ข้อมูลลิขสิทธิ์แผนที่ (Attribution)");
+  btn.innerHTML = "ℹ";
+
+  // หุ้มข้อความเดิมไว้ใน wrapper
+  const contentWrap = document.createElement("span");
+  contentWrap.className = "attr-content";
+  while (attrEl.firstChild) {
+    contentWrap.appendChild(attrEl.firstChild);
+  }
+
+  attrEl.appendChild(btn);
+  attrEl.appendChild(contentWrap);
+
+  const toggle = (e) => {
+    e.stopPropagation();
+    attrEl.classList.toggle("expanded");
+  };
+
+  btn.addEventListener("click", toggle);
+  btn.addEventListener("touchend", (e) => {
+    e.preventDefault();
+    toggle(e);
+  });
+
+  // คลิกที่อื่นบนแผนที่เพื่อหุบ
+  map.on("click", () => {
+    attrEl.classList.remove("expanded");
+  });
 }
 
 /**
