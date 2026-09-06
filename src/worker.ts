@@ -12,6 +12,7 @@ import { WaterLevelRecord, RainfallRecord } from "./types.js";
 
 type Bindings = {
   DB?: D1Database;
+  STADIA_API_KEY?: string;
 };
 
 // สร้าง Service สำหรับจัดการแคชใน Worker isolate
@@ -467,6 +468,13 @@ app.post("/api/refresh", async (c) => {
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }
+});
+
+/**
+ * API: Map tile API key (อ่านจาก Worker secret — ห้าม hardcode ในฝั่ง client)
+ */
+app.get("/api/map-key", (c) => {
+  return c.json({ key: c.env?.STADIA_API_KEY ?? null });
 });
 
 /**

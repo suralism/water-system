@@ -2248,8 +2248,8 @@ body {
 
 .chart-canvas-wrapper {
   position: relative;
-  height: 260px;
-  padding: 16px;
+  height: 300px;
+  padding: 10px 16px 12px;
   background: #fff;
 }
 

@@ -6,6 +6,7 @@ let currentBaseTileLayer = null;
 let currentBaseLayerName = "voyager";
 let baseTileLayers = {};
 let satelliteLabelsLayer = null;
+let stadiaKey = null; // ดึงจาก /api/map-key (Worker secret) — ห้าม hardcode ในไฟล์นี้
 
 let allWaterLevels = [];
 let allRainfalls = [];
@@ -140,9 +141,19 @@ function formatFreeboardWithTrend(freeboardM, stationId, currentMsl) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+async function loadMapKey() {
+  try {
+    const res = await fetchSafeJson("/api/map-key");
+    stadiaKey = res?.key ?? null;
+  } catch {
+    stadiaKey = null;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   applyTheme(currentTheme, false);
   updateSoundIcon();
+  await loadMapKey();
   initMap();
   setupEventListeners();
   loadAllData();
@@ -162,31 +173,41 @@ function initMap() {
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
   // เลเยอร์แผนที่ต่างๆ (Stadia Maps / Esri / OpenTopoMap)
-  const STADIA_API_KEY = "aed0453b-4569-49e1-837e-b704bd737a23";
   const STADIA_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener noreferrer">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener noreferrer">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>';
 
-  baseTileLayers = {
-    voyager: L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`, {
+  if (stadiaKey) {
+    const stadiaUrl = (style) => `https://tiles.stadiamaps.com/tiles/${style}/{z}/{x}/{y}{r}.png?api_key=${stadiaKey}`;
+    baseTileLayers.voyager = L.tileLayer(stadiaUrl("alidade_smooth"), {
       attribution: STADIA_ATTRIBUTION,
       maxZoom: 20,
-    }),
-    dark: L.tileLayer(`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`, {
+    });
+    baseTileLayers.dark = L.tileLayer(stadiaUrl("alidade_smooth_dark"), {
       attribution: STADIA_ATTRIBUTION,
       maxZoom: 20,
-    }),
-    satellite: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-      attribution: 'Tiles &copy; Esri &mdash; HII ThaiWater',
+    });
+    satelliteLabelsLayer = L.tileLayer(stadiaUrl("stamen_toner_labels"), {
+      maxZoom: 20,
+      pane: "shadowPane",
+    });
+  } else {
+    // Fallback ที่ไม่ต้องใช้ API key (เช่น local dev ที่ยังไม่ตั้ง .dev.vars)
+    baseTileLayers.voyager = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
       maxZoom: 19,
-    }),
-    topo: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-      attribution: 'Map &copy; OpenTopoMap | ThaiWater',
-      maxZoom: 17,
-    }),
-  };
+    });
+    baseTileLayers.dark = L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>',
+      maxZoom: 20,
+    });
+  }
 
-  satelliteLabelsLayer = L.tileLayer(`https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}{r}.png?api_key=${STADIA_API_KEY}`, {
-    maxZoom: 20,
-    pane: "shadowPane",
+  baseTileLayers.satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    attribution: 'Tiles &copy; Esri &mdash; HII ThaiWater',
+    maxZoom: 19,
+  });
+  baseTileLayers.topo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+    attribution: 'Map &copy; OpenTopoMap | ThaiWater',
+    maxZoom: 17,
   });
 
   // ตั้งค่าเริ่มต้นตามธีม
@@ -233,7 +254,7 @@ function switchBaseLayer(layerKey) {
   currentBaseLayerName = layerKey;
   currentBaseTileLayer.addTo(map);
 
-  if (layerKey === "satellite") {
+  if (layerKey === "satellite" && satelliteLabelsLayer) {
     satelliteLabelsLayer.addTo(map);
   }
 
@@ -2202,6 +2223,7 @@ function renderChart(graphResult, compareResults = []) {
 
   const points = graphResult.points || [];
   const labels = [];
+  const tooltipTitles = [];
   const waterLevelValues = [];
   const minBankValues = [];
   const warningValues = [];
@@ -2209,11 +2231,18 @@ function renderChart(graphResult, compareResults = []) {
   const minBank = graphResult.minBankMsl ?? currentModalStation?.minBankMsl;
   const warningLevel = graphResult.warningLevelMsl;
 
-  points.forEach((pt) => {
+  const thaiMonthsShort = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+function thaiFullDate(d) {
+  return `${d.getDate()} ${thaiMonthsShort[d.getMonth()]} ${d.getFullYear() + 543} • ${padZero(d.getHours())}:${padZero(d.getMinutes())} น.`;
+}
+
+points.forEach((pt) => {
     const d = pt.observedAt ? new Date(pt.observedAt) : (pt.rawDatetime ? new Date(pt.rawDatetime.replace(" ", "T") + "+07:00") : null);
     const labelStr = d ? `${padZero(d.getHours())}:${padZero(d.getMinutes())} (${d.getDate()}/${d.getMonth()+1})` : pt.rawDatetime;
 
     labels.push(labelStr);
+    tooltipTitles.push(d ? thaiFullDate(d) : (pt.rawDatetime ?? ""));
     waterLevelValues.push(pt.waterlevelMsl);
 
     if (minBank !== null && minBank !== undefined) {
@@ -2226,26 +2255,61 @@ function renderChart(graphResult, compareResults = []) {
 
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
+  const mainColor = isDark ? "#38bdf8" : "#0284c7";
+  const chartHeight = canvas.parentElement?.clientHeight ?? 300;
+  const areaGradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
+  areaGradient.addColorStop(0, isDark ? "rgba(56, 189, 248, 0.28)" : "rgba(2, 132, 199, 0.20)");
+  areaGradient.addColorStop(1, "rgba(2, 132, 199, 0)");
+
+  const lineBase = {
+    fill: false,
+    tension: 0.35,
+    spanGaps: true,
+    pointRadius: 0,
+    pointHitRadius: 12,
+    pointHoverRadius: 5,
+  };
+
+  // Dataset แรกวาดทับด้านบนสุดเสมอ — ใส่เส้นน้ำจริงไว้หน้าสุด
   const datasets = [
     {
-      label: "ระดับน้ำจริง (ม.รทก.)",
+      ...lineBase,
+      label: "ระดับน้ำจริง",
       data: waterLevelValues,
-      borderColor: isDark ? "#38bdf8" : "#0369a1",
-      backgroundColor: isDark ? "rgba(56, 189, 248, 0.15)" : "rgba(3, 105, 161, 0.08)",
+      borderColor: mainColor,
+      backgroundColor: areaGradient,
       fill: true,
-      tension: 0.25,
-      spanGaps: true,
-      pointRadius: points.length > 50 ? 1 : 3,
-      pointHoverRadius: 6,
       borderWidth: 2.5,
-      pointBackgroundColor: isDark ? "#38bdf8" : "#0369a1",
+      pointBackgroundColor: mainColor,
     }
   ];
 
+  if (minBankValues.length > 0) {
+    datasets.push({
+      ...lineBase,
+      label: `ระดับตลิ่ง ${Number(minBank).toFixed(2)} ม.`,
+      data: minBankValues,
+      borderColor: isDark ? "#f87171" : "#ef4444",
+      borderDash: [7, 5],
+      borderWidth: 1.8,
+    });
+  }
+
+  if (warningValues.length > 0 && warningLevel !== minBank) {
+    datasets.push({
+      ...lineBase,
+      label: `ระดับเตือนภัย ${Number(warningLevel).toFixed(2)} ม.`,
+      data: warningValues,
+      borderColor: isDark ? "#fbbf24" : "#d97706",
+      borderDash: [4, 4],
+      borderWidth: 1.4,
+    });
+  }
+
   // เส้นเปรียบเทียบปีน้ำท่วมใหญ่ — align ตาม key "เดือน-วัน ชั่วโมง" เวลาไทย
   const compareStyles = {
-    2019: { be: 2562, color: "#8b5cf6", darkColor: "#a78bfa" },
-    2022: { be: 2565, color: "#10b981", darkColor: "#34d399" },
+    2019: { be: 2562, color: isDark ? "#a78bfa" : "#7c3aed" },
+    2022: { be: 2565, color: isDark ? "#34d399" : "#059669" },
   };
   const missingYears = [];
 
@@ -2265,16 +2329,12 @@ function renderChart(graphResult, compareResults = []) {
       continue;
     }
     datasets.push({
-      label: `ปีน้ำท่วม พ.ศ. ${style.be}`,
+      ...lineBase,
+      label: `พ.ศ. ${style.be} (ปีน้ำท่วม)`,
       data: points.map((pt) => cmpMap.get(thaiLocalHourKey(pt.observedAt)) ?? null),
-      borderColor: isDark ? style.darkColor : style.color,
-      borderDash: [2, 2],
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      fill: false,
-      tension: 0.25,
-      spanGaps: true,
-      borderWidth: 1.8,
+      borderColor: style.color,
+      borderDash: [5, 3],
+      borderWidth: 1.6,
     });
   }
 
@@ -2290,30 +2350,6 @@ function renderChart(graphResult, compareResults = []) {
     }
   }
 
-  if (minBankValues.length > 0) {
-    datasets.push({
-      label: `ระดับตลิ่ง (${minBank.toFixed(2)} ม.รทก.)`,
-      data: minBankValues,
-      borderColor: "#ef4444",
-      borderDash: [6, 4],
-      pointRadius: 0,
-      fill: false,
-      borderWidth: 2,
-    });
-  }
-
-  if (warningValues.length > 0 && warningLevel !== minBank) {
-    datasets.push({
-      label: `ระดับเตือนภัย (${warningLevel.toFixed(2)} ม.รทก.)`,
-      data: warningValues,
-      borderColor: "#f59e0b",
-      borderDash: [4, 4],
-      pointRadius: 0,
-      fill: false,
-      borderWidth: 1.5,
-    });
-  }
-
   waterChart = new Chart(ctx, {
     type: "line",
     data: { labels, datasets },
@@ -2321,20 +2357,38 @@ function renderChart(graphResult, compareResults = []) {
       responsive: true,
       maintainAspectRatio: false,
       interaction: { mode: "index", intersect: false },
+      layout: { padding: { top: 4 } },
+      animation: { duration: 500, easing: "easeOutQuart" },
       plugins: {
         legend: {
-          labels: { color: isDark ? "#cbd5e1" : "#475569", font: { family: "Sarabun, sans-serif", size: 12 } }
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "line",
+            boxWidth: 26,
+            boxHeight: 8,
+            padding: 14,
+            color: isDark ? "#94a3b8" : "#64748b",
+            font: { family: "Sarabun, sans-serif", size: 11.5, weight: 600 }
+          }
         },
         tooltip: {
-          backgroundColor: isDark ? "rgba(15, 23, 42, 0.95)" : "rgba(255,255,255,0.97)",
-          titleColor: isDark ? "#f8fafc" : "#0f172a",
-          bodyColor: isDark ? "#cbd5e1" : "#475569",
-          borderColor: isDark ? "#334155" : "#e2e8f0",
-          borderWidth: 1,
+          backgroundColor: isDark ? "rgba(10, 15, 30, 0.96)" : "rgba(15, 23, 42, 0.94)",
+          titleColor: "#f8fafc",
+          bodyColor: "#e2e8f0",
+          padding: 12,
+          cornerRadius: 10,
+          boxPadding: 6,
+          usePointStyle: true,
+          displayColors: true,
+          titleMarginBottom: 8,
+          titleFont: { family: "Sarabun, sans-serif", size: 12, weight: 700 },
+          bodyFont: { family: "Sarabun, sans-serif", size: 11.5 },
           callbacks: {
+            title: (items) => tooltipTitles[items[0].dataIndex] ?? items[0].label,
             label: function(context) {
               const val = context.parsed.y;
-              if (val === null || val === undefined) return `${context.dataset.label}: ไม่มีข้อมูล`;
+              if (val === null || val === undefined) return null; // ซ่อนบรรทัดที่ไม่มีข้อมูล
               return `${context.dataset.label}: ${val.toFixed(2)} ม.รทก.`;
             }
           }
@@ -2342,12 +2396,21 @@ function renderChart(graphResult, compareResults = []) {
       },
       scales: {
         x: {
-          grid: { color: isDark ? "#1e293b" : "#f1f5f9", drawBorder: false },
-          ticks: { color: isDark ? "#64748b" : "#94a3b8", font: { size: 10 }, maxTicksLimit: 12 }
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: isDark ? "#64748b" : "#94a3b8", font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0, autoSkip: true }
         },
         y: {
-          grid: { color: isDark ? "#1e293b" : "#f1f5f9", drawBorder: false },
-          ticks: { color: isDark ? "#94a3b8" : "#64748b", font: { family: "Sarabun, sans-serif", size: 11 } }
+          grid: { color: isDark ? "rgba(51, 65, 85, 0.5)" : "rgba(226, 232, 240, 0.7)" },
+          border: { display: false },
+          ticks: { color: isDark ? "#64748b" : "#94a3b8", font: { family: "Sarabun, sans-serif", size: 10.5 }, maxTicksLimit: 6, padding: 6 },
+          title: {
+            display: true,
+            text: "หน่วย: ม.รทก.",
+            color: isDark ? "#475569" : "#94a3b8",
+            font: { family: "Sarabun, sans-serif", size: 10 },
+            padding: { bottom: 4 }
+          }
         }
       }
     }

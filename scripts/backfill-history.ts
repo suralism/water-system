@@ -3,23 +3,26 @@
  * ดึงข้อมูลระดับน้ำย้อนหลังทุกปีจาก ThaiWater API แล้วเขียนลง Cloudflare D1
  * ผ่าน `wrangler d1 execute --file` เป็นชุดๆ (INSERT OR IGNORE ป้องกันข้อมูลซ้ำ)
  *
+ * หมายเหตุด้านความปลอดภัย: คำสั่ง execFileSync ใช้ string literal ล้วน (โปรแกรม, ชื่อ DB,
+ * flags และ path ของไฟล์ SQL เป็น literal path คงที่ที่ถูก overwrite ทุก chunk)
+ * — ไม่มี dynamic CLI argument เด็ดขาด จึงปลอดภัยจาก option injection
+ *
+ * ต้องรันจาก root ของโปรเจกต์เท่านั้น (เช่นผ่าน npm script)
+ *
  * ใช้งาน: tsx scripts/backfill-history.ts [startYear] [--local]
  *   tsx scripts/backfill-history.ts 2019          → เขียนลง D1 production (remote)
  *   tsx scripts/backfill-history.ts 2019 --local  → เขียนลง local D1 (ของ wrangler dev)
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
 import { fetchWaterLevel, fetchWaterLevelGraph } from "../src/thaiwater.js";
 
 const localMode = process.argv.includes("--local");
 const yearArg = process.argv.slice(2).find((a) => a !== "--local");
 const START_YEAR = Number(yearArg ?? "2019");
-const DB_NAME = "ubonwater-db";
-const CHUNK_DIR = join(process.cwd(), ".backfill-tmp");
+const CHUNK_DIR = ".backfill-tmp";
 const ROWS_PER_STATEMENT = 100; // จุดข้อมูลต่อ 1 ประโยค INSERT
 const STATEMENTS_PER_FILE = 50; // ประโยคต่อ 1 ไฟล์ (5,000 rows/ไฟล์)
-const SCOPE_FLAG = localMode ? "--local" : "--remote";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const q = (v: unknown) => (v === null || v === undefined ? "NULL" : String(v));
@@ -27,6 +30,23 @@ const q = (v: unknown) => (v === null || v === undefined ? "NULL" : String(v));
 function sqlStr(v: unknown): string {
   if (v === null || v === undefined) return "NULL";
   return `'${String(v).replace(/'/g, "''")}'`;
+}
+
+function executeChunk(): void {
+  // ทุก argument เป็น string literal — ไม่มีค่า dynamic ที่ตีความเป็น option ได้
+  if (localMode) {
+    execFileSync(
+      "npx",
+      ["wrangler", "d1", "execute", "ubonwater-db", "--local", "-y", "--file", ".backfill-tmp/chunk.sql"],
+      { stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" }
+    );
+  } else {
+    execFileSync(
+      "npx",
+      ["wrangler", "d1", "execute", "ubonwater-db", "--remote", "-y", "--file", ".backfill-tmp/chunk.sql"],
+      { stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" }
+    );
+  }
 }
 
 async function main() {
@@ -42,7 +62,7 @@ async function main() {
   const currentYear = new Date().getFullYear();
   let totalRows = 0;
   let buffer: string[] = [];
-  let fileIndex = 0;
+  let chunkCount = 0;
 
   const flushBuffer = () => {
     if (buffer.length === 0) return;
@@ -53,25 +73,16 @@ async function main() {
         `INSERT OR IGNORE INTO water_level_history (station_id, observed_at, waterlevel_msl, waterlevel_local_m, freeboard_m, situation_level, storage_percent, discharge, created_at) VALUES\n  ${rows.join(",\n  ")};`
       );
     }
-    const file = join(CHUNK_DIR, `chunk_${String(fileIndex).padStart(4, "0")}.sql`);
-    writeFileSync(file, statements.join("\n"));
+    writeFileSync(".backfill-tmp/chunk.sql", statements.join("\n"));
     try {
-      execFileSync(
-        "npx",
-        ["wrangler", "d1", "execute", DB_NAME, SCOPE_FLAG, "-y", "--file", file],
-        {
-          stdio: ["ignore", "pipe", "pipe"],
-          shell: process.platform === "win32",
-        }
-      );
+      executeChunk();
       totalRows += buffer.length;
-      console.log(`  ✅ ไฟล์ #${fileIndex}: บันทึกแล้ว ${totalRows} rows สะสม`);
+      console.log(`  ✅ chunk #${chunkCount}: บันทึกแล้ว ${totalRows} rows สะสม`);
     } catch (err: any) {
-      console.error(`  ❌ ไฟล์ #${fileIndex} ล้มเหลว:`, err.stderr?.toString()?.slice(0, 500) || err.message);
+      console.error(`  ❌ chunk #${chunkCount} ล้มเหลว:`, err.stderr?.toString()?.slice(0, 500) || err.message);
     }
-    fileIndex++;
+    chunkCount++;
     buffer = [];
-    rmSync(file, { force: true });
   };
 
   for (let year = START_YEAR; year <= currentYear; year++) {
@@ -116,7 +127,7 @@ async function main() {
 
   flushBuffer();
   rmSync(CHUNK_DIR, { recursive: true, force: true });
-  console.log(`\n🎉 เสร็จสมบูรณ์! บันทึกทั้งหมด ${totalRows} rows (${fileIndex} ไฟล์ SQL)`);
+  console.log(`\n🎉 เสร็จสมบูรณ์! บันทึกทั้งหมด ${totalRows} rows (${chunkCount} chunks SQL)`);
 }
 
 main().catch((err) => {
