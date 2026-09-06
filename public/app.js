@@ -2255,7 +2255,7 @@ points.forEach((pt) => {
   const datasets = [
     {
       ...lineBase,
-      label: "ระดับน้ำจริง",
+      label: "ระดับน้ำปัจจุบัน",
       data: waterLevelValues,
       borderColor: mainColor,
       backgroundColor: areaGradient,
