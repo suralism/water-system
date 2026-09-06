@@ -5,7 +5,6 @@ let markerClusterGroup;
 let currentBaseTileLayer = null;
 let currentBaseLayerName = "voyager";
 let baseTileLayers = {};
-let satelliteLabelsLayer = null;
 let stadiaKey = null; // ดึงจาก /api/map-key (Worker secret) — ห้าม hardcode ในไฟล์นี้
 
 let allWaterLevels = [];
@@ -177,7 +176,7 @@ function initMap() {
 
   L.control.zoom({ position: "bottomright" }).addTo(map);
 
-  // เลเยอร์แผนที่ต่างๆ (เครดิตแบบสั้นกระชับ ไม่รกตา แต่ถูกต้องตาม License)
+  // เลเยอร์แผนที่: โหมดสว่าง (voyager) และ โหมดมืด (dark)
   const STADIA_ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/" target="_blank" rel="noopener">Stadia</a> &bull; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM</a>';
 
   if (stadiaKey) {
@@ -190,10 +189,6 @@ function initMap() {
       attribution: STADIA_ATTRIBUTION,
       maxZoom: 20,
     });
-    satelliteLabelsLayer = L.tileLayer(stadiaUrl("stamen_toner_labels"), {
-      maxZoom: 20,
-      pane: "shadowPane",
-    });
   } else {
     // Fallback ที่ไม่ต้องใช้ API key (เช่น local dev ที่ยังไม่ตั้ง .dev.vars)
     baseTileLayers.voyager = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -205,15 +200,6 @@ function initMap() {
       maxZoom: 20,
     });
   }
-
-  baseTileLayers.satellite = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
-    attribution: 'Tiles &copy; Esri',
-    maxZoom: 19,
-  });
-  baseTileLayers.topo = L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-    attribution: '&copy; OpenTopoMap',
-    maxZoom: 17,
-  });
 
   // ตั้งค่าเริ่มต้นตามธีม
   const defaultLayerKey = currentTheme === "dark" ? "dark" : "voyager";
@@ -285,20 +271,15 @@ function switchBaseLayer(layerKey) {
   if (currentBaseTileLayer) {
     map.removeLayer(currentBaseTileLayer);
   }
-  if (satelliteLabelsLayer && map.hasLayer(satelliteLabelsLayer)) {
-    map.removeLayer(satelliteLabelsLayer);
-  }
 
   currentBaseTileLayer = baseTileLayers[layerKey];
   currentBaseLayerName = layerKey;
   currentBaseTileLayer.addTo(map);
 
-  if (layerKey === "satellite" && satelliteLabelsLayer) {
-    satelliteLabelsLayer.addTo(map);
-  }
-
   document.querySelectorAll(".map-layer-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.layer === layerKey);
+    const isActive = btn.dataset.layer === layerKey;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-pressed", String(isActive));
   });
 }
 

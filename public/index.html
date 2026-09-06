@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
   <div class="app-shell">
@@ -363,17 +363,11 @@
                 <!-- Map Floating Toolbar (เลเยอร์ + เรดาร์ + GPS + รีเซ็ต ชุดเดียว) -->
                 <div class="map-floating-toolbar" role="toolbar" aria-label="เครื่องมือแผนที่">
                   <div class="map-layer-selector" id="mapLayerSelector" role="group" aria-label="เลือกชั้นแผนที่">
-                    <button class="map-layer-btn active" data-layer="voyager" title="แผนที่มาตรฐาน" aria-pressed="true">
-                      <i data-lucide="map" class="icon-xs"></i> <span>มาตรฐาน</span>
+                    <button class="map-layer-btn active" data-layer="voyager" title="แผนที่โหมดสว่าง" aria-pressed="true">
+                      <i data-lucide="sun" class="icon-xs"></i> <span>สว่าง</span>
                     </button>
-                    <button class="map-layer-btn" data-layer="satellite" title="ภาพถ่ายดาวเทียม" aria-pressed="false">
-                      <i data-lucide="satellite" class="icon-xs"></i> <span>ดาวเทียม</span>
-                    </button>
-                    <button class="map-layer-btn" data-layer="dark" title="แผนที่โทนมืด" aria-pressed="false">
-                      <i data-lucide="moon" class="icon-xs"></i> <span>โหมดมืด</span>
-                    </button>
-                    <button class="map-layer-btn" data-layer="topo" title="แผนที่ภูมิประเทศ" aria-pressed="false">
-                      <i data-lucide="mountain" class="icon-xs"></i> <span>ภูมิประเทศ</span>
+                    <button class="map-layer-btn" data-layer="dark" title="แผนที่โหมดมืด" aria-pressed="false">
+                      <i data-lucide="moon" class="icon-xs"></i> <span>มืด</span>
                     </button>
                   </div>
 
@@ -727,7 +721,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=13"></script>
+  <script src="app.js?v=14"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();
