@@ -214,21 +214,8 @@ function initMap() {
   const defaultLayerKey = currentTheme === "dark" ? "dark" : "voyager";
   switchBaseLayer(defaultLayerKey);
 
-  markerClusterGroup = L.markerClusterGroup({
-    chunkedLoading: true,
-    maxClusterRadius: 35,
-    spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false,
-    iconCreateFunction: function (cluster) {
-      const count = cluster.getChildCount();
-      const clusterColor = currentMode === "water" ? "rgba(3,105,161,0.92)" : "rgba(37,99,235,0.92)";
-      return L.divIcon({
-        html: `<div class="cluster-bubble" style="background:${clusterColor};"><span>${count}</span></div>`,
-        className: "custom-cluster",
-        iconSize: L.point(34, 34),
-      });
-    },
-  });
+  // แสดงหมุดสถานีแบบเดี่ยว (ไม่ใช้ clustering) — หมุดทุกตัวอยู่บนแผนที่เสมอ
+  markerClusterGroup = L.layerGroup();
 
   map.addLayer(markerClusterGroup);
 
@@ -982,7 +969,7 @@ function renderMapMarkers() {
     });
   }
 
-  markerClusterGroup.addLayers(markers);
+  markers.forEach((m) => markerClusterGroup.addLayer(m));
   if (radarLayer && map && map.hasLayer(markerClusterGroup)) {
     map.removeLayer(markerClusterGroup);
   }

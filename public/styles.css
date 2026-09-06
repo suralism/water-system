@@ -1837,24 +1837,6 @@ img, canvas, svg { max-width: 100%; }
 
 .rain-marker-wrap { font-family: var(--font); }
 
-/* Marker cluster */
-.cluster-bubble {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 50% 50% 50% 4px;
-  transform: rotate(45deg);
-  box-shadow: var(--shadow-2);
-  border: 2px solid rgba(255, 255, 255, 0.9);
-}
-.cluster-bubble > span {
-  transform: rotate(-45deg);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
 /* ---------- 15. Responsive ---------- */
 @media (max-width: 1100px) {
   .map-layout { grid-template-columns: 1fr; }
