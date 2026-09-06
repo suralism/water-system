@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=14">
 </head>
 <body>
   <div class="app-shell">
@@ -128,18 +128,30 @@
     <!-- ========== MAIN AREA ========== -->
     <div class="main-area">
 
-      <!-- Topbar (แสดงบนจอเล็กเท่านั้น) -->
+      <!-- Topbar (แถบหัวแอปบนจอมือถือ ดีไซน์พรีเมียม) -->
       <header class="topbar">
-        <button class="icon-btn" id="btnSidebarToggle" aria-label="เปิดเมนู" aria-expanded="false">
+        <button class="topbar-btn" id="btnSidebarToggle" aria-label="เปิดเมนูนำทาง" aria-expanded="false">
           <i data-lucide="menu" class="icon-sm"></i>
         </button>
+
         <div class="topbar-brand">
-          <span class="brand-icon small"><i data-lucide="waves"></i></span>
-          <strong>UBONWATCH</strong>
+          <div class="topbar-brand-icon">
+            <i data-lucide="waves"></i>
+          </div>
+          <div class="topbar-brand-text">
+            <span class="topbar-title">UBONWATCH</span>
+            <span class="topbar-subtitle">ระบบเตือนภัยน้ำ จ.อุบลฯ</span>
+          </div>
         </div>
-        <button class="icon-btn" id="btnTopRefresh" title="อัปเดตข้อมูลล่าสุด" aria-label="อัปเดตข้อมูลล่าสุด">
-          <i data-lucide="refresh-cw" class="icon-sm"></i>
-        </button>
+
+        <div class="topbar-actions">
+          <button class="topbar-btn" id="btnTopTheme" title="สลับโหมดมืด/สว่าง" aria-label="สลับโหมดมืด/สว่าง">
+            <i data-lucide="moon" class="icon-sm" id="topThemeIcon"></i>
+          </button>
+          <button class="topbar-btn" id="btnTopRefresh" title="ดึงข้อมูลใหม่ทันที" aria-label="ดึงข้อมูลใหม่ทันที">
+            <i data-lucide="refresh-cw" class="icon-sm"></i>
+          </button>
+        </div>
       </header>
 
       <main class="main-content">
@@ -721,7 +733,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

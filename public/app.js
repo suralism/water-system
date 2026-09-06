@@ -2156,8 +2156,12 @@ function applyTheme(theme, updateMap = true) {
   const themeIcon = document.getElementById("themeIcon");
   if (themeIcon) {
     themeIcon.setAttribute("data-lucide", theme === "dark" ? "sun" : "moon");
-    if (typeof lucide !== "undefined") lucide.createIcons();
   }
+  const topThemeIcon = document.getElementById("topThemeIcon");
+  if (topThemeIcon) {
+    topThemeIcon.setAttribute("data-lucide", theme === "dark" ? "sun" : "moon");
+  }
+  if (typeof lucide !== "undefined") lucide.createIcons();
 
   if (updateMap && map) {
     if (theme === "dark" && currentBaseLayerName === "voyager") {
@@ -2954,6 +2958,7 @@ function setupEventListeners() {
   document.getElementById("btnTopRefresh")?.addEventListener("click", () => {
     document.getElementById("btnRefresh")?.click();
   });
+  document.getElementById("btnTopTheme")?.addEventListener("click", toggleTheme);
 
   // ===== Keyboard: Escape ปิด modal → bottom sheet → drawer + Focus trap ใน modal =====
   document.addEventListener("keydown", (e) => {

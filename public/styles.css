@@ -498,22 +498,100 @@ img, canvas, svg { max-width: 100%; }
 .sidebar .icon-btn:hover { background: rgba(148, 163, 184, 0.16); color: #f1f5f9; }
 .sound-btn.sound-off { color: #f87171 !important; }
 
-/* ===== Topbar (จอเล็ก) ===== */
+/* ===== Topbar (แถบหัวแอปบนจอมือถือ ดีไซน์พรีเมียม) ===== */
 .topbar {
   display: none;
   position: sticky;
   top: 0;
   z-index: 50;
   align-items: center;
-  gap: 12px;
-  height: var(--topbar-h);
-  padding: 0 14px;
-  background: linear-gradient(180deg, var(--sb-bg-1), var(--sb-bg-2));
+  justify-content: space-between;
+  gap: 10px;
+  height: 60px;
+  padding: 0 12px;
+  background:
+    radial-gradient(380px 100px at 50% -20px, rgba(56, 189, 248, 0.22), transparent 75%),
+    linear-gradient(185deg, #133249 0%, var(--sb-bg-1) 50%, var(--sb-bg-2) 100%);
   color: #f1f5f9;
-  box-shadow: var(--shadow-2);
+  border-bottom: 1px solid rgba(125, 211, 252, 0.22);
+  box-shadow: 0 4px 20px rgba(4, 12, 26, 0.35);
+  backdrop-filter: blur(12px);
 }
-.topbar-brand { display: flex; align-items: center; gap: 8px; font-size: 0.95rem; letter-spacing: 0.03em; }
-.topbar .icon-btn { color: #f1f5f9; }
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.topbar-brand-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #38bdf8 0%, #0284c7 60%, #075985 100%);
+  color: #fff;
+  font-size: 16px;
+  box-shadow:
+    0 0 0 1px rgba(125, 211, 252, 0.35),
+    0 3px 12px rgba(2, 132, 199, 0.45);
+}
+.topbar-brand-icon svg { width: 17px; height: 17px; }
+
+.topbar-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.topbar-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: linear-gradient(90deg, #ffffff 40%, #7dd3fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.topbar-subtitle {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.topbar-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast), color var(--t-fast);
+}
+.topbar-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(125, 211, 252, 0.4);
+  color: var(--sb-active-text);
+}
+.topbar-btn:active {
+  transform: scale(0.94);
+}
+.topbar-btn svg { width: 17px; height: 17px; }
 
 /* ===== Main ===== */
 .main-area {
