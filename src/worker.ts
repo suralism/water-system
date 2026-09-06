@@ -13,6 +13,7 @@ import { WaterLevelRecord, RainfallRecord } from "./types.js";
 type Bindings = {
   DB?: D1Database;
   STADIA_API_KEY?: string;
+  ADMIN_TOKEN?: string;
 };
 
 // สร้าง Service สำหรับจัดการแคชใน Worker isolate
@@ -25,6 +26,31 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // เปิดใช้งาน CORS สำหรับทุก request
 app.use("/*", cors());
+
+// ----- Admin Auth -----
+// Endpoint /api/admin/* ต้องส่ง header: Authorization: Bearer <ADMIN_TOKEN>
+// (token เก็บเป็น Worker secret — ถ้ายังไม่ตั้ง จะปิด endpoint ไว้ก่อนเพื่อกันยิงฟรี)
+app.use("/api/admin/*", async (c, next) => {
+  const adminToken = c.env?.ADMIN_TOKEN;
+  if (!adminToken) {
+    return c.json({ success: false, message: "Admin endpoints are disabled (ADMIN_TOKEN secret is not configured)" }, 503);
+  }
+
+  const provided = c.req.header("Authorization") ?? "";
+  const token = provided.startsWith("Bearer ") ? provided.slice(7).trim() : "";
+  const providedBytes = new TextEncoder().encode(token);
+  const adminBytes = new TextEncoder().encode(adminToken);
+  // timingSafeEqual เป็น non-standard extension ของ Workers runtime
+  const subtle = crypto.subtle as SubtleCrypto & {
+    timingSafeEqual(a: ArrayBuffer, b: ArrayBuffer): boolean;
+  };
+  if (providedBytes.length !== adminBytes.length ||
+      !subtle.timingSafeEqual(providedBytes.buffer, adminBytes.buffer)) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
+
+  await next();
+});
 
 // ดักจับ Error รวมในระดับแอปพลิเคชัน
 app.onError((err, c) => {

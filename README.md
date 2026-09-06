@@ -103,7 +103,8 @@ npm run dev
    ```
 3. **ดึงข้อมูลประวัติย้อนหลัง 30 วันเข้าฐานข้อมูล (ครั้งแรก):**
    ```bash
-   curl -X POST https://<worker-subdomain>.workers.dev/api/admin/backfill-graphs?days=30
+   curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+     https://<worker-subdomain>.workers.dev/api/admin/backfill-graphs?days=30
    ```
 
 ---
@@ -116,8 +117,10 @@ npm run dev
 | `/api/rainfall` | `GET` | รายการสถานีวัดน้ำฝนทั้งหมด พร้อมปริมาณฝนสะสม 24 ชม. และ 1 ชม. |
 | `/api/amphoes` | `GET` | รายชื่ออำเภอที่มีการติดตั้งสถานีตรวจวัด |
 | `/api/water-levels/graph?station_id=XX&days=N` | `GET` | ข้อมูลกราฟระดับน้ำย้อนหลัง $N$ วัน (ดึงจาก D1 Database ความเร็วสูง) |
-| `/api/admin/sync-d1` | `POST` | สั่งซิงค์ Snapshot ปัจจุบันลง D1 ทันที |
-| `/api/admin/backfill-graphs?days=30` | `POST` | ดึงข้อมูลประวัติย้อนหลังทุกสถานีเข้าเก็บใน D1 |
+| `/api/admin/sync-d1` | `POST` | สั่งซิงค์ Snapshot ปัจจุบันลง D1 ทันที (**ต้องแนบ** `Authorization: Bearer <ADMIN_TOKEN>`) |
+| `/api/admin/backfill-graphs?days=30` | `POST` | ดึงข้อมูลประวัติย้อนหลังทุกสถานีเข้าเก็บใน D1 (**ต้องแนบ** `Authorization: Bearer <ADMIN_TOKEN>`) |
+
+> 🔐 Endpoint `/api/admin/*` ทั้งหมดต้องส่ง header `Authorization: Bearer <ADMIN_TOKEN>` — token ตั้งผ่าน `npx wrangler secret put ADMIN_TOKEN` (local dev ใส่ใน `.dev.vars`)
 
 ---
 
