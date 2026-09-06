@@ -281,6 +281,39 @@ curl "https://water.ubon.online/api/water-levels/graph?station_id=269&start_date
 
 ---
 
+## 🖼️ Standalone Embed Widget (ฝังภาพจำลองหน้าตัดน้ำลงเว็บอื่นด้วย `<iframe>`)
+
+หากต้องการนำ **ภาพจำลองหน้าตัดลำน้ำ 2D (Cross-Section & Physics Animation)** พร้อมตัวเลขระดับน้ำจริงไปแสดงบนเว็บไซต์อื่น (เช่น เว็บข่าว, เทศบาล, อบจ. หรือบล็อก) สามารถคัดลอกโค้ด `<iframe>` ด้านล่างไปแปะได้ทันทีโดยไม่ต้องเขียนโค้ดเอง:
+
+### 1. ฝังสถานี M.7 สะพานเสรีประชาธิปไตย (ค่าเริ่มต้น)
+```html
+<iframe 
+  src="https://water.ubon.online/embed/cross-section?station_id=269" 
+  width="100%" 
+  height="380" 
+  frameborder="0" 
+  style="border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; max-width: 650px;"
+  title="ภาพจำลองหน้าตัดระดับน้ำ M.7 สะพานเสรีประชาธิปไตย จ.อุบลราชธานี">
+</iframe>
+```
+
+### 2. พารามิเตอร์ที่ปรับแต่งได้:
+- `station_id`: รหัสสถานีที่ต้องการแสดง เช่น:
+  - `269`: สะพานเสรีประชาธิปไตย อ.เมือง (M.7)
+  - `281`: บ้านนาเยีย อ.นาเยีย (ลำโดมใหญ่)
+  - `740540`: สะพานข้ามแม่น้ำมูล อ.เมือง
+- `theme`: 
+  - `auto` (ค่าเริ่มต้น): สลับสีตามธีมเครื่องผู้ใช้
+  - `dark`: บังคับโหมดมืด (Dark Theme)
+  - `light`: บังคับโหมดสว่าง (Light Theme)
+
+*ตัวอย่างการบังคับโหมดมืด:*
+```html
+<iframe src="https://water.ubon.online/embed/cross-section?station_id=269&theme=dark" width="100%" height="380" frameborder="0"></iframe>
+```
+
+---
+
 ## 💻 ตัวอย่างโค้ดเรียกใช้งาน (Code Examples)
 
 ### JavaScript / TypeScript (Node.js หรือ Frontend)

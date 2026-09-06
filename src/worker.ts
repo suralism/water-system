@@ -515,6 +515,14 @@ app.get("/api/health", (c) => {
   });
 });
 
+/**
+ * 11. Embed Widget: Standalone 2D Cross-Section สำหรับนำไปฝัง iframe บนเว็บอื่น
+ */
+app.get("/embed/cross-section", (c) => {
+  const url = new URL(c.req.url);
+  return c.redirect(`/embed-cross-section.html${url.search}`, 302);
+});
+
 export default {
   fetch: app.fetch,
 
