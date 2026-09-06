@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>แบบจำลองหน้าตัดระดับน้ำ - UBONWATCH Embed Widget</title>
+  <title>แบบจำลองหน้าตัดระดับน้ำ 2D - UBONWATCH</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,13 +14,15 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     
     :root {
-      --bg: #ffffff;
-      --bg-card: #f8fafc;
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-inset: #f1f5f9;
       --border: #e2e8f0;
       --text-1: #0f172a;
       --text-2: #334155;
       --text-3: #64748b;
       --brand: #0284c7;
+      --brand-soft: #e0f2fe;
       --danger: #dc2626;
       --danger-bg: #fef2f2;
       --warning: #d97706;
@@ -34,11 +36,13 @@
       :root:not([data-theme="light"]) {
         --bg: #0b1120;
         --bg-card: #111a2e;
-        --border: #1e293b;
+        --bg-inset: #1a2438;
+        --border: #22304a;
         --text-1: #f1f5f9;
         --text-2: #cbd5e1;
         --text-3: #94a3b8;
         --brand: #38bdf8;
+        --brand-soft: rgba(56, 189, 248, 0.12);
         --danger: #f87171;
         --danger-bg: rgba(239, 68, 68, 0.15);
         --warning: #fbbf24;
@@ -51,11 +55,13 @@
     [data-theme="dark"] {
       --bg: #0b1120;
       --bg-card: #111a2e;
-      --border: #1e293b;
+      --bg-inset: #1a2438;
+      --border: #22304a;
       --text-1: #f1f5f9;
       --text-2: #cbd5e1;
       --text-3: #94a3b8;
       --brand: #38bdf8;
+      --brand-soft: rgba(56, 189, 248, 0.12);
       --danger: #f87171;
       --danger-bg: rgba(239, 68, 68, 0.15);
       --warning: #fbbf24;
@@ -65,13 +71,15 @@
     }
 
     [data-theme="light"] {
-      --bg: #ffffff;
-      --bg-card: #f8fafc;
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --bg-inset: #f1f5f9;
       --border: #e2e8f0;
       --text-1: #0f172a;
       --text-2: #334155;
       --text-3: #64748b;
       --brand: #0284c7;
+      --brand-soft: #e0f2fe;
       --danger: #dc2626;
       --danger-bg: #fef2f2;
       --warning: #d97706;
@@ -85,7 +93,7 @@
       background: var(--bg);
       color: var(--text-1);
       line-height: 1.4;
-      padding: 12px;
+      padding: 10px;
       overflow: hidden;
       width: 100%;
       height: 100vh;
@@ -98,10 +106,10 @@
       flex-direction: column;
       height: 100%;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       background: var(--bg-card);
       overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     }
 
     /* Header */
@@ -109,10 +117,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
-      background: var(--bg);
+      background: var(--bg-card);
     }
 
     .header-left {
@@ -123,27 +131,28 @@
     }
 
     .station-badge {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 800;
       padding: 2px 7px;
       border-radius: 6px;
       background: var(--brand);
       color: #fff;
       flex-shrink: 0;
+      letter-spacing: 0.03em;
     }
 
     .station-name {
       font-size: 0.9rem;
-      font-weight: 700;
+      font-weight: 800;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .status-pill {
-      font-size: 0.72rem;
-      font-weight: 700;
-      padding: 3px 9px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 3px 10px;
       border-radius: 20px;
       white-space: nowrap;
       flex-shrink: 0;
@@ -152,38 +161,71 @@
     .status-pill.warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); }
     .status-pill.safe { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
 
-    /* Metrics Summary Bar */
-    .metrics-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      padding: 8px 12px;
-      background: var(--bg);
+    /* Cross-Section Subheader (เหมือนใน SIM ของเรา) */
+    .cs-subheader {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 14px;
+      background: var(--bg-inset);
       border-bottom: 1px solid var(--border);
     }
 
-    .metric-item {
+    .cs-header-info {
       display: flex;
-      flex-direction: column;
-      gap: 1px;
+      align-items: center;
+      gap: 8px;
     }
-    .metric-lbl {
-      font-size: 0.65rem;
+
+    .cs-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+
+    .cs-capacity-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+      background: var(--success-bg);
+      color: var(--success);
+      font-variant-numeric: tabular-nums;
+    }
+    .cs-capacity-badge.warning { background: var(--warning-bg); color: var(--warning); }
+    .cs-capacity-badge.overflow { background: var(--danger-bg); color: var(--danger); }
+
+    .cs-legend-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .cs-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.68rem;
       color: var(--text-3);
       font-weight: 600;
-      white-space: nowrap;
     }
-    .metric-val {
-      font-size: 0.95rem;
-      font-weight: 800;
-      color: var(--text-1);
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
+
+    .cs-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
     }
-    .metric-val.brand { color: var(--brand); }
-    .metric-val.danger { color: var(--danger); }
-    .metric-val.warning { color: var(--warning); }
-    .metric-val.safe { color: var(--success); }
+    .cs-dot.ground { background: #a16207; }
+    .cs-dot.water { background: #0ea5e9; }
+    .cs-dot.bank { background: #57534e; }
 
     /* Canvas Area */
     .canvas-container {
@@ -195,10 +237,7 @@
       background: #000;
     }
 
-    #csCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
+    #crossSectionCanvas {
       width: 100%;
       height: 100%;
       display: block;
@@ -210,9 +249,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 6px 12px;
+      padding: 6px 14px;
       border-top: 1px solid var(--border);
-      background: var(--bg);
+      background: var(--bg-card);
       font-size: 0.68rem;
       color: var(--text-3);
     }
@@ -245,24 +284,24 @@
     }
     .credit-link:hover { text-decoration: underline; }
 
-    /* Loading / Error */
+    /* Loading Overlay */
     .loading-overlay {
       position: absolute;
       inset: 0;
-      background: var(--bg);
+      background: var(--bg-card);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: var(--text-3);
       z-index: 10;
     }
     .spinner {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border: 3px solid var(--border);
       border-top-color: var(--brand);
       border-radius: 50%;
@@ -276,7 +315,7 @@
   <div class="widget-wrap">
     <div class="loading-overlay" id="loadingOverlay">
       <div class="spinner"></div>
-      <span>กำลังโหลดแบบจำลองหน้าตัดลำน้ำ...</span>
+      <span>กำลังโหลดแบบจำลองหน้าตัดลำน้ำ 2D...</span>
     </div>
 
     <!-- Header -->
@@ -288,29 +327,24 @@
       <span class="status-pill safe" id="statusPill">ระดับน้ำปกติ</span>
     </header>
 
-    <!-- Metrics Bar -->
-    <div class="metrics-bar">
-      <div class="metric-item">
-        <span class="metric-lbl">ระดับน้ำปัจจุบัน</span>
-        <span class="metric-val brand" id="valWaterLevel">- ม.รทก.</span>
+    <!-- Subheader (เหมือนใน SIM ของเรา) -->
+    <div class="cs-subheader">
+      <div class="cs-header-info">
+        <span class="cs-tag">🌊 แบบจำลองหน้าตัดลำน้ำ</span>
+        <div class="cs-capacity-badge" id="csCapacityBadge">
+          ปริมาณน้ำในลำน้ำ: <strong id="csCapacityVal">85%</strong>
+        </div>
       </div>
-      <div class="metric-item">
-        <span class="metric-lbl">ระดับตลิ่ง</span>
-        <span class="metric-val" id="valBankLevel">- ม.รทก.</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-lbl">ระยะพ้นตลิ่ง</span>
-        <span class="metric-val safe" id="valFreeboard">- ม.</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-lbl">ความจุลำน้ำ</span>
-        <span class="metric-val" id="valCapacity">- %</span>
+      <div class="cs-legend-row">
+        <span class="cs-legend-item"><span class="cs-dot ground"></span> ดินริมตลิ่ง</span>
+        <span class="cs-legend-item"><span class="cs-dot water"></span> ผิวน้ำ</span>
+        <span class="cs-legend-item"><span class="cs-dot bank"></span> ขอบตลิ่ง</span>
       </div>
     </div>
 
     <!-- 2D Physics Canvas -->
     <div class="canvas-container">
-      <canvas id="csCanvas"></canvas>
+      <canvas id="crossSectionCanvas" width="700" height="280"></canvas>
     </div>
 
     <!-- Footer -->
@@ -333,114 +367,102 @@
       document.documentElement.setAttribute("data-theme", customTheme);
     }
 
-    let stationData = null;
-    let wavePhase = 0;
-    let animId = null;
+    let currentModalStation = null;
+    let crossSectionWavePhase = 0;
+    let simOffsetM = 0; // ใน embed คือระดับจริง (offset = 0)
 
-    const canvas = document.getElementById("csCanvas");
+    const canvas = document.getElementById("crossSectionCanvas");
     const ctx = canvas.getContext("2d");
-
-    function resizeCanvas() {
-      const container = canvas.parentElement;
-      canvas.width = container.clientWidth * window.devicePixelRatio;
-      canvas.height = container.clientHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    }
 
     // 2. ดึงข้อมูลสดจาก API
     async function fetchStationData() {
       try {
         const res = await fetch(`/api/water-levels?search=${targetStationId}`);
         const json = await res.json();
-        if (!json.success || !json.data || json.data.length === 0) {
-          // fallback ค้นหาจากรายการทั้งหมด
+        let item = null;
+        if (json.success && json.data && json.data.length > 0) {
+          item = json.data.find(s => s.station.id === targetStationId) || json.data[0];
+        } else {
           const allRes = await fetch("/api/water-levels");
           const allJson = await allRes.json();
-          stationData = allJson.data.find(s => s.station.id === targetStationId) || allJson.data[0];
-        } else {
-          stationData = json.data.find(s => s.station.id === targetStationId) || json.data[0];
+          item = allJson.data.find(s => s.station.id === targetStationId) || allJson.data[0];
         }
-        updateUI();
+
+        if (item) {
+          currentModalStation = {
+            id: item.station.id,
+            name: item.station.nameTh,
+            waterlevelMsl: item.waterlevelMsl,
+            minBankMsl: item.minBankMsl,
+            freeboardM: item.freeboardM,
+            situationLevel: item.situationLevel,
+            observedAt: item.observedAt,
+          };
+          updateHeaderUI(item);
+        }
         document.getElementById("loadingOverlay").style.display = "none";
       } catch (err) {
         console.error("Fetch Error:", err);
       }
     }
 
-    // 3. อัปเดตข้อมูลบนการ์ด
-    function updateUI() {
-      if (!stationData) return;
-      const st = stationData.station;
-      
+    function updateHeaderUI(item) {
+      const st = item.station;
       document.getElementById("badgeStationId").textContent = targetStationId === 269 ? "M.7" : `ID: ${st.id}`;
       document.getElementById("stationName").textContent = st.nameTh || `สถานี ${st.id}`;
 
-      const actualWater = stationData.waterlevelMsl ?? 100;
-      const bankLevel = stationData.minBankMsl ?? (actualWater + 2);
-      const freeboard = stationData.freeboardM;
+      const isOverflow = item.freeboardM !== null && item.freeboardM < 0;
+      const isWarning = (item.freeboardM !== null && item.freeboardM <= 0.5) || (item.situationLevel !== null && item.situationLevel >= 4);
 
-      const isOverflow = freeboard !== null && freeboard < 0;
-      const isWarning = freeboard !== null && freeboard <= 0.5 && !isOverflow;
-
-      // Status Pill
       const pill = document.getElementById("statusPill");
       if (isOverflow) {
-        pill.textContent = `🚨 ล้นตลิ่ง ${Math.abs(freeboard).toFixed(2)} ม.`;
+        pill.textContent = `🚨 ล้นตลิ่ง ${Math.abs(item.freeboardM).toFixed(2)} ม.`;
         pill.className = "status-pill danger";
       } else if (isWarning) {
-        pill.textContent = `⚠️ เฝ้าระวัง (เหลือ ${freeboard.toFixed(2)} ม.)`;
+        pill.textContent = `⚠️ เฝ้าระวัง (เหลือ ${item.freeboardM.toFixed(2)} ม.)`;
         pill.className = "status-pill warning";
       } else {
         pill.textContent = `✅ ระดับน้ำปกติ`;
         pill.className = "status-pill safe";
       }
 
-      // Values
-      document.getElementById("valWaterLevel").textContent = `${actualWater.toFixed(2)} ม.`;
-      document.getElementById("valBankLevel").textContent = `${bankLevel.toFixed(2)} ม.`;
-      
-      const fbEl = document.getElementById("valFreeboard");
-      if (freeboard !== null) {
-        fbEl.textContent = `${freeboard >= 0 ? '+' : ''}${freeboard.toFixed(2)} ม.`;
-        fbEl.className = `metric-val ${isOverflow ? 'danger' : isWarning ? 'warning' : 'safe'}`;
-      } else {
-        fbEl.textContent = "-";
-      }
-
-      // ความจุ
-      const bedLevel = bankLevel - 7;
-      const capacityPct = Math.round(((actualWater - bedLevel) / (bankLevel - bedLevel)) * 100);
-      document.getElementById("valCapacity").textContent = `${capacityPct}%`;
-
-      // เวลา
-      if (stationData.observedAt) {
-        const d = new Date(stationData.observedAt);
+      if (item.observedAt) {
+        const d = new Date(item.observedAt);
         document.getElementById("obsTime").textContent = `อัปเดตล่าสุด: ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} น.`;
       }
     }
 
-    // 4. วาดภาพจำลองหน้าตัดลำน้ำ 2D Physics Canvas
-    function renderCrossSection() {
-      if (!stationData) return;
-
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const width = rect.width;
-      const height = rect.height;
+    // 3. ฟังก์ชันวาด Canvas ตัวเดียวกับใน SIM ของเว็บเรา 100%
+    function drawCrossSection() {
+      if (!canvas || !currentModalStation) return;
+      const width = canvas.width;
+      const height = canvas.height;
 
       ctx.clearRect(0, 0, width, height);
 
       const isDark = document.documentElement.getAttribute("data-theme") === "dark" || 
                      (!document.documentElement.getAttribute("data-theme") && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-      const actualWaterLevel = stationData.waterlevelMsl ?? 100;
-      const bankLevel = stationData.minBankMsl ?? (actualWaterLevel + 2);
-      const bedLevel = bankLevel - 7;
+      // ค่าระดับน้ำจริง
+      const actualWaterLevel = currentModalStation.waterlevelMsl ?? 100;
+      const bankLevel = currentModalStation.minBankMsl ?? (actualWaterLevel + 2);
+      const bedLevel = bankLevel - 7; // สมมติท้องน้ำลึก 7 เมตรจากตลิ่ง
 
-      const freeboard = stationData.freeboardM ?? (bankLevel - actualWaterLevel);
-      const isOverflow = freeboard < 0;
-      const isWarning = freeboard <= 0.5 && !isOverflow;
+      const simulatedWaterLevel = actualWaterLevel + simOffsetM;
+      const currentFreeboard = bankLevel - simulatedWaterLevel;
+      const isOverflow = currentFreeboard < 0;
+      const isWarning = currentFreeboard <= 0.5 && !isOverflow;
 
-      // 1. ท้องฟ้า
+      // อัปเดต Capacity Badge
+      const capacityPct = Math.round(((simulatedWaterLevel - bedLevel) / (bankLevel - bedLevel)) * 100);
+      const capValEl = document.getElementById("csCapacityVal");
+      const capBadgeEl = document.getElementById("csCapacityBadge");
+      if (capValEl && capBadgeEl) {
+        capValEl.textContent = `${capacityPct}% (${isOverflow ? 'น้ำเอ่อล้นตลิ่ง' : isWarning ? 'ใกล้ตลิ่ง' : 'ปกติ'})`;
+        capBadgeEl.className = `cs-capacity-badge ${isOverflow ? 'overflow' : isWarning ? 'warning' : ''}`;
+      }
+
+      // 1. Sky / Background Gradient
       const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
       if (isDark) {
         skyGrad.addColorStop(0, "#0b1329");
@@ -452,127 +474,138 @@
       ctx.fillStyle = skyGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // พิกัดความสูง
-      const bankY = Math.max(50, height * 0.32);
-      const bedY = height - 25;
+      // คำนวณพิกัด Y
+      const bankY = 70;
+      const bedY = height - 40;
       const bankRange = bedY - bankY;
-
-      const waterRatio = Math.max(0, Math.min(1.3, (actualWaterLevel - bedLevel) / (bankLevel - bedLevel)));
+      
+      // ระดับน้ำ Y
+      const waterRatio = Math.max(0, Math.min(1.3, (simulatedWaterLevel - bedLevel) / (bankLevel - bedLevel)));
       const waterSurfaceY = bedY - (waterRatio * bankRange);
 
-      // 2. ดินริมตลิ่ง
+      // 2. วาดพื้นดินตลิ่งซ้ายและขวา (Embankment Ground)
       ctx.fillStyle = isDark ? "#451a03" : "#78350f";
       ctx.beginPath();
+      // ตลิ่งซ้าย
       ctx.moveTo(0, bankY);
-      ctx.lineTo(width * 0.18, bankY);
-      ctx.bezierCurveTo(width * 0.24, bankY + 15, width * 0.30, bedY, width * 0.38, bedY);
-      ctx.lineTo(width * 0.62, bedY);
-      ctx.bezierCurveTo(width * 0.70, bedY, width * 0.76, bankY + 15, width * 0.82, bankY);
+      ctx.lineTo(130, bankY);
+      ctx.bezierCurveTo(170, bankY + 20, 210, bedY, 260, bedY);
+      // ท้องน้ำ
+      ctx.lineTo(width - 260, bedY);
+      // ตลิ่งขวา
+      ctx.bezierCurveTo(width - 210, bedY, width - 170, bankY + 20, width - 130, bankY);
       ctx.lineTo(width, bankY);
       ctx.lineTo(width, height);
       ctx.lineTo(0, height);
       ctx.closePath();
       ctx.fill();
 
-      // ขอบหญ้า
+      // ขอบหญ้าบนตลิ่ง
       ctx.fillStyle = isDark ? "#065f46" : "#15803d";
-      ctx.fillRect(0, bankY - 3, width * 0.18, 4);
-      ctx.fillRect(width * 0.82, bankY - 3, width * 0.18, 4);
+      ctx.fillRect(0, bankY - 4, 132, 5);
+      ctx.fillRect(width - 132, bankY - 4, 132, 5);
 
-      // 3. ผิวน้ำ + ระลอกคลื่น Sine Wave
+      // 3. วาดผิวน้ำพร้อมคลื่น Sine Wave Physics
       ctx.save();
       ctx.beginPath();
-      ctx.moveTo(width * 0.12, height);
-      ctx.lineTo(width * 0.12, waterSurfaceY);
+      ctx.moveTo(100, height);
+      ctx.lineTo(100, waterSurfaceY);
 
-      for (let x = width * 0.12; x <= width * 0.88; x += 4) {
-        const wave = Math.sin((x * 0.04) + wavePhase) * 2.5 + Math.cos((x * 0.08) - wavePhase) * 1.2;
+      // วาดลูกคลื่น
+      for (let x = 100; x <= width - 100; x += 5) {
+        const wave = Math.sin((x * 0.035) + crossSectionWavePhase) * 3 + Math.cos((x * 0.07) - crossSectionWavePhase) * 1.5;
         ctx.lineTo(x, waterSurfaceY + wave);
       }
 
-      ctx.lineTo(width * 0.88, height);
+      ctx.lineTo(width - 100, height);
       ctx.closePath();
 
+      // Water Body Gradient
       const waterGrad = ctx.createLinearGradient(0, waterSurfaceY, 0, height);
       if (isOverflow) {
-        waterGrad.addColorStop(0, "rgba(239, 68, 68, 0.88)");
-        waterGrad.addColorStop(1, "rgba(185, 28, 28, 0.96)");
+        waterGrad.addColorStop(0, "rgba(239, 68, 68, 0.85)");
+        waterGrad.addColorStop(1, "rgba(185, 28, 28, 0.95)");
       } else if (isWarning) {
-        waterGrad.addColorStop(0, "rgba(245, 158, 11, 0.88)");
-        waterGrad.addColorStop(1, "rgba(180, 83, 9, 0.96)");
+        waterGrad.addColorStop(0, "rgba(245, 158, 11, 0.85)");
+        waterGrad.addColorStop(1, "rgba(180, 83, 9, 0.95)");
       } else {
-        waterGrad.addColorStop(0, "rgba(14, 165, 233, 0.85)");
-        waterGrad.addColorStop(1, "rgba(2, 132, 199, 0.96)");
+        waterGrad.addColorStop(0, "rgba(14, 165, 233, 0.82)");
+        waterGrad.addColorStop(1, "rgba(2, 132, 199, 0.95)");
       }
       ctx.fillStyle = waterGrad;
       ctx.fill();
       ctx.restore();
 
-      // 4. เรือ/ทุ่นลอยน้ำ
+      // 4. วาดทุ่นลอยน้ำ / เรือจำลอง (Floating Marker)
       const boatX = width / 2;
-      const boatWave = Math.sin((boatX * 0.04) + wavePhase) * 2.5;
+      const boatWave = Math.sin((boatX * 0.035) + crossSectionWavePhase) * 3;
       const boatY = waterSurfaceY + boatWave;
 
       ctx.save();
       ctx.translate(boatX, boatY);
-      ctx.rotate(Math.cos(wavePhase) * 0.08);
+      ctx.rotate(Math.cos(crossSectionWavePhase) * 0.08);
 
+      // ทุ่น/เรือ
       ctx.fillStyle = "#f59e0b";
       ctx.beginPath();
-      ctx.arc(0, -2, 9, 0, Math.PI, false);
+      ctx.arc(0, -2, 10, 0, Math.PI, false);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle = "#ef4444";
-      ctx.fillRect(-2, -13, 3, 11);
+      ctx.fillRect(-2, -14, 4, 12);
       ctx.beginPath();
-      ctx.moveTo(1, -13);
-      ctx.lineTo(10, -8.5);
-      ctx.lineTo(1, -4);
+      ctx.moveTo(2, -14);
+      ctx.lineTo(12, -9);
+      ctx.lineTo(2, -4);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
 
-      // 5. เส้นระดับตลิ่ง
+      // 5. วาดเส้นระดับตลิ่ง (Bank Level Line)
       ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(20, bankY);
-      ctx.lineTo(width - 20, bankY);
+      ctx.moveTo(40, bankY);
+      ctx.lineTo(width - 40, bankY);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // ป้ายขอบตลิ่ง
       ctx.fillStyle = isDark ? "#fca5a5" : "#dc2626";
-      ctx.font = "bold 11px 'Sarabun', sans-serif";
-      ctx.fillText(`ขอบตลิ่ง: ${bankLevel.toFixed(2)} ม.รทก.`, 25, bankY - 6);
+      ctx.font = "bold 12px 'Sarabun', sans-serif";
+      ctx.fillText(`🚨 ระดับตลิ่ง: ${bankLevel.toFixed(2)} ม.รทก.`, 45, bankY - 8);
 
-      // เสาวัด Staff Gauge
-      const gaugeX = width * 0.18 + 8;
+      // 6. เสาวัดระดับน้ำ (Staff Gauge) บนตลิ่ง
+      const gaugeX = 140;
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(gaugeX, bankY - 20, 12, bedY - bankY + 25);
+      ctx.fillRect(gaugeX, bankY - 30, 16, bedY - bankY + 40);
       ctx.strokeStyle = "#0f172a";
-      ctx.lineWidth = 1.2;
-      ctx.strokeRect(gaugeX, bankY - 20, 12, bedY - bankY + 25);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(gaugeX, bankY - 30, 16, bedY - bankY + 40);
 
-      for (let gy = bankY - 14; gy < bedY + 6; gy += 10) {
-        ctx.fillStyle = "#0f172a";
-        ctx.fillRect(gaugeX + 6, gy, 6, 1.8);
+      // ขีดบอกระยะบนเสา
+      ctx.fillStyle = "#0f172a";
+      for (let gy = bankY - 20; gy < bedY + 10; gy += 12) {
+        ctx.fillRect(gaugeX + 8, gy, 8, 2);
       }
+
+      // 7. ป้ายแสดงระดับน้ำปัจจุบันลอยเหนือผิวน้ำ
+      ctx.fillStyle = isOverflow ? "#dc2626" : isWarning ? "#d97706" : (isDark ? "#38bdf8" : "#0284c7");
+      ctx.font = "bold 13px 'Sarabun', sans-serif";
+      const waterLabel = `ระดับน้ำ: ${simulatedWaterLevel.toFixed(2)} ม.รทก. (${currentFreeboard >= 0 ? 'เหลืออีก ' + currentFreeboard.toFixed(2) + ' ม. จะถึงตลิ่ง' : 'ล้นตลิ่ง ' + Math.abs(currentFreeboard).toFixed(2) + ' ม.'})`;
+      ctx.fillText(waterLabel, width / 2 - 120, waterSurfaceY - 14);
     }
 
-    function loop() {
-      renderCrossSection();
-      wavePhase += 0.05;
-      animId = requestAnimationFrame(loop);
+    function renderLoop() {
+      drawCrossSection();
+      crossSectionWavePhase += 0.05;
+      requestAnimationFrame(renderLoop);
     }
 
     // เริ่มทำงาน
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
     fetchStationData().then(() => {
-      loop();
+      renderLoop();
     });
 
     // รีเฟรชข้อมูลทุก 3 นาที
