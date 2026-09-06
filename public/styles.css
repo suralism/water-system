@@ -2046,10 +2046,52 @@ img, canvas, svg { max-width: 100%; }
   }
   .river-chips-bar { flex-basis: auto; }
 
-  .map-wrapper { min-height: 65vh; }
-  .map-floating-toolbar { left: 8px; right: 8px; top: 8px; }
+  /* Map บนมือถือ: ย้าย toolbar ขึ้นเป็นแถบด้านบนกรอบแผนที่ ไม่ลอยทับหมุด */
+  .map-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: unset;
+  }
+
+  .map-floating-toolbar {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 10px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-1);
+    pointer-events: auto;
+  }
+
+  .map-layer-selector, .map-action-buttons {
+    background: var(--bg-inset);
+    backdrop-filter: none;
+    border: 1px solid var(--border-1);
+    box-shadow: none;
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .map-layer-btn, .map-control-action {
+    padding: 6px 8px;
+  }
   .map-layer-btn span { display: none; }
   .map-control-action span:not(.radar-badge) { display: none; }
+
+  #map {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    min-height: 420px;
+    flex: 1;
+  }
+
+  /* บนมือถือใช้นิ้วถ่างซูมได้อยู่แล้ว ซ่อนปุ่ม zoom เพื่อไม่ให้บังมุมแผนที่ */
+  .leaflet-control-zoom {
+    display: none !important;
+  }
 
   .modal-backdrop { padding: 10px; align-items: flex-end; }
   .modal-card { max-height: 92dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; }
