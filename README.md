@@ -111,6 +111,8 @@ npm run dev
 
 ## 📡 สรุป API Endpoints
 
+> 📖 ดูคู่มือการใช้งาน API ฉบับเต็ม พร้อมตัวอย่างโค้ด (JavaScript, Python, cURL) และคำอธิบาย JSON Schema ได้ที่ **[API.md](./API.md)**
+
 | Endpoint | Method | คำอธิบาย |
 | :--- | :---: | :--- |
 | `/api/water-levels` | `GET` | รายการสถานีวัดระดับน้ำทั้งหมด พร้อมระยะพ้นตลิ่งและสถานะความเสี่ยง |
