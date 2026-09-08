@@ -1365,7 +1365,19 @@ async function openWaterModal(stationId) {
 
   document.getElementById("modalWaterLevelMsl").textContent = stationWater.waterlevelMsl !== null ? stationWater.waterlevelMsl.toFixed(2) : "-";
   document.getElementById("modalMinBankMsl").textContent = stationWater.minBankMsl !== null ? stationWater.minBankMsl.toFixed(2) : "-";
-  document.getElementById("modalWaterLocalM").textContent = stationWater.waterlevelLocalM !== null ? stationWater.waterlevelLocalM.toFixed(2) : "-";
+
+  // ตั้งค่ากล่องการเปลี่ยนแปลงเป็นสถานะกำลังโหลดก่อน เมื่อกราฟดึงเสร็จจะคำนวณและแสดงค่า
+  const changeValEl = document.getElementById("modalWaterChangeVal");
+  const changeUnitEl = document.getElementById("modalWaterChangeUnit");
+  const changeHintEl = document.getElementById("modalWaterChangeHint");
+  const changeBox = document.getElementById("modalChangeBox");
+  if (changeValEl) {
+    changeValEl.textContent = "กำลังคำนวณ...";
+    changeValEl.className = "metric-num text-muted";
+  }
+  if (changeUnitEl) changeUnitEl.textContent = "";
+  if (changeHintEl) changeHintEl.textContent = "เทียบ 12.00 น. เมื่อวาน";
+  if (changeBox) changeBox.className = "metric-box";
 
   const freeboardEl = document.getElementById("modalFreeboardM");
   const freeboardUnitEl = document.getElementById("modalFreeboardUnit");
@@ -2214,11 +2226,111 @@ async function loadStationGraph() {
         );
       }
       renderChart(json.data, compareResults);
+      updateWaterChangeMetric(json.data.points || []);
     }
   } catch (err) {
     console.error("Error loading graph:", err);
   } finally {
     if (chartLoader) chartLoader.classList.add("hidden");
+  }
+}
+
+/**
+ * คำนวณส่วนต่างระดับน้ำเทียบกับเวลา 12.00 น. ของวันก่อนหน้า
+ * และอัปเดตกล่อง "การเปลี่ยนแปลง" ใน Modal
+ */
+function updateWaterChangeMetric(points) {
+  const changeValEl = document.getElementById("modalWaterChangeVal");
+  const changeUnitEl = document.getElementById("modalWaterChangeUnit");
+  const changeHintEl = document.getElementById("modalWaterChangeHint");
+  const changeBox = document.getElementById("modalChangeBox");
+  if (!changeValEl) return;
+
+  const validPoints = points.filter((p) => p && p.waterlevelMsl !== null && Number.isFinite(p.waterlevelMsl));
+  if (validPoints.length === 0) {
+    changeValEl.textContent = "ไม่มีข้อมูล";
+    changeValEl.className = "metric-num text-muted";
+    if (changeUnitEl) changeUnitEl.textContent = "";
+    if (changeHintEl) changeHintEl.textContent = "เทียบ 12.00 น. เมื่อวาน";
+    return;
+  }
+
+  // จุดตรวจวัดล่าสุด
+  const latestPt = validPoints[validPoints.length - 1];
+  const latestVal = latestPt.waterlevelMsl;
+  const latestTimeStr = latestPt.observedAt || latestPt.rawDatetime;
+  if (!latestTimeStr) return;
+
+  // แปลงเป็นเวลาไทย (+07:00)
+  const latestDt = new Date(latestTimeStr);
+  const thaiOffsetMs = 7 * 60 * 60 * 1000;
+  const latestThaiMs = latestDt.getTime() + thaiOffsetMs;
+  const latestThaiDate = new Date(latestThaiMs);
+
+  // วันที่ของวันก่อนหน้า (ตามเวลาไทย)
+  const prevThaiDate = new Date(latestThaiDate.getUTCFullYear(), latestThaiDate.getUTCMonth(), latestThaiDate.getUTCDate() - 1);
+  // เป้าหมาย: 12:00 น. วันก่อนหน้า (เวลาไทย = 05:00 UTC)
+  const targetNoonThaiMs = Date.UTC(prevThaiDate.getFullYear(), prevThaiDate.getMonth(), prevThaiDate.getDate(), 5, 0, 0, 0);
+
+  // ค้นหาจุดข้อมูลที่ใกล้เคียงเวลา 12.00 น. ที่สุด (ภายในช่วง +- 6 ชั่วโมง)
+  let bestPt = null;
+  let minDiffMs = 6 * 60 * 60 * 1000;
+
+  for (const pt of validPoints) {
+    const ptTimeStr = pt.observedAt || pt.rawDatetime;
+    if (!ptTimeStr) continue;
+    const ptMs = new Date(ptTimeStr).getTime();
+    const diffMs = Math.abs(ptMs - targetNoonThaiMs);
+    if (diffMs < minDiffMs) {
+      minDiffMs = diffMs;
+      bestPt = pt;
+    }
+  }
+
+  if (!bestPt) {
+    changeValEl.textContent = "ไม่มีข้อมูล";
+    changeValEl.className = "metric-num text-muted";
+    if (changeUnitEl) changeUnitEl.textContent = "";
+    if (changeHintEl) changeHintEl.textContent = "ไม่มีข้อมูล 12.00 น. เมื่อวาน";
+    if (changeBox) changeBox.className = "metric-box";
+    return;
+  }
+
+  const prevVal = bestPt.waterlevelMsl;
+  const diffM = latestVal - prevVal;
+  const diffCm = diffM * 100;
+  const absCm = Math.abs(diffCm);
+
+  // หาเวลาที่ใช้อ้างอิงจริง
+  const bestPtDt = new Date(new Date(bestPt.observedAt || bestPt.rawDatetime).getTime() + thaiOffsetMs);
+  const timeRefStr = `${padZero(bestPtDt.getUTCHours())}:${padZero(bestPtDt.getUTCMinutes())} น.`;
+
+  if (Math.abs(diffCm) < 0.5) {
+    // ทรงตัว (เปลี่ยนแปลงน้อยกว่า 0.5 ซม.)
+    changeValEl.innerHTML = `<span class="change-direction steady">ทรงตัว</span> 0`;
+    if (changeUnitEl) changeUnitEl.textContent = "ซม.";
+    changeValEl.className = "metric-num text-muted";
+    if (changeBox) changeBox.className = "metric-box change-steady";
+  } else if (diffM > 0) {
+    // เพิ่มขึ้น
+    const cmFormatted = absCm >= 100 ? (diffM).toFixed(2) : absCm.toFixed(1);
+    const unitText = absCm >= 100 ? "ม." : "ซม.";
+    changeValEl.innerHTML = `<span class="change-direction up">▲ เพิ่มขึ้น</span> ${cmFormatted}`;
+    if (changeUnitEl) changeUnitEl.textContent = unitText;
+    changeValEl.className = "metric-num text-danger";
+    if (changeBox) changeBox.className = "metric-box change-up";
+  } else {
+    // ลดลง
+    const cmFormatted = absCm >= 100 ? Math.abs(diffM).toFixed(2) : absCm.toFixed(1);
+    const unitText = absCm >= 100 ? "ม." : "ซม.";
+    changeValEl.innerHTML = `<span class="change-direction down">▼ ลดลง</span> ${cmFormatted}`;
+    if (changeUnitEl) changeUnitEl.textContent = unitText;
+    changeValEl.className = "metric-num text-success";
+    if (changeBox) changeBox.className = "metric-box change-down";
+  }
+
+  if (changeHintEl) {
+    changeHintEl.textContent = `เทียบเวลา ${timeRefStr} เมื่อวาน (${prevVal.toFixed(2)} ม.)`;
   }
 }
 

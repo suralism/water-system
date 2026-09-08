@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=14">
+  <link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
   <div class="app-shell">
@@ -616,16 +616,17 @@
             <span class="metric-hint">จุดเริ่มล้นตลิ่ง</span>
           </div>
 
-          <!-- กล่องรอง 2: ความลึกท้องน้ำ -->
-          <div class="metric-box">
+          <!-- กล่องรอง 2: การเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า -->
+          <div class="metric-box" id="modalChangeBox">
             <div class="metric-head">
-              <span class="metric-title">ความลึกจากท้องน้ำ</span>
+              <span class="metric-title">การเปลี่ยนแปลง</span>
+              <span class="metric-pill" id="modalChangeBadge">24 ชม.</span>
             </div>
             <div class="metric-body">
-              <span class="metric-num" id="modalWaterLocalM">-</span>
-              <span class="metric-unit">ม.</span>
+              <span class="metric-num" id="modalWaterChangeVal">-</span>
+              <span class="metric-unit" id="modalWaterChangeUnit"></span>
             </div>
-            <span class="metric-hint">ระดับน้ำจากก้นลำน้ำ</span>
+            <span class="metric-hint" id="modalWaterChangeHint">เทียบ 12.00 น. เมื่อวาน</span>
           </div>
         </div>
 
@@ -733,7 +734,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=16"></script>
+  <script src="app.js?v=17"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

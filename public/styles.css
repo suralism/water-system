@@ -1684,6 +1684,30 @@ img, canvas, svg { max-width: 100%; }
 }
 .metric-hero.freeboard.danger .freeboard-tag { background: var(--danger); color: #fff; }
 
+/* กล่องการเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า */
+.change-direction {
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-block;
+  margin-right: 2px;
+  vertical-align: middle;
+}
+.change-direction.up { color: var(--danger); }
+.change-direction.down { color: var(--success); }
+.change-direction.steady { color: var(--text-3); }
+
+.metric-box.change-up {
+  border-left: 3px solid var(--danger);
+}
+.metric-box.change-down {
+  border-left: 3px solid var(--success);
+}
+.metric-box.change-steady {
+  border-left: 3px solid var(--border-2);
+}
+
+.text-success { color: var(--success) !important; }
+
 /* --- Graph Toolbar (รวม range picker + compare ในแถบเดียว) --- */
 .graph-section { display: flex; flex-direction: column; gap: 10px; }
 
