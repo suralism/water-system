@@ -464,10 +464,6 @@ img, canvas, svg { max-width: 100%; }
   color: var(--sb-active-text);
 }
 
-.sidebar-credit { font-size: 0.68rem; color: var(--sb-text-dim); text-align: center; }
-.sidebar-credit a { color: var(--sb-active-text); text-decoration: none; }
-.sidebar-credit a:hover { text-decoration: underline; }
-
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
