@@ -1665,26 +1665,28 @@ img, canvas, svg { max-width: 100%; }
 .metric-hero.primary .metric-pill { background: var(--info); color: #fff; }
 .metric-hero.primary .metric-num { color: var(--info); }
 
-.metric-hero.freeboard { border-left: 4px solid var(--success); }
-.metric-hero.freeboard.safe {
+/* กล่องรอง 2: ระยะพ้นตลิ่ง */
+.metric-box.freeboard { border-left: 3px solid var(--success); }
+.metric-box.freeboard.safe {
   border-left-color: var(--success);
-  background: linear-gradient(135deg, var(--success-bg), var(--bg-card));
 }
-.metric-hero.freeboard.safe .freeboard-tag { background: var(--success); color: #fff; }
+.metric-box.freeboard.safe .freeboard-tag { background: var(--success); color: #fff; }
 
-.metric-hero.freeboard.warning {
+.metric-box.freeboard.warning {
   border-left-color: var(--warning);
-  background: linear-gradient(135deg, var(--warning-bg), var(--bg-card));
 }
-.metric-hero.freeboard.warning .freeboard-tag { background: var(--warning); color: #fff; }
+.metric-box.freeboard.warning .freeboard-tag { background: var(--warning); color: #fff; }
 
-.metric-hero.freeboard.danger {
+.metric-box.freeboard.danger {
   border-left-color: var(--danger);
-  background: linear-gradient(135deg, var(--danger-bg), var(--bg-card));
 }
-.metric-hero.freeboard.danger .freeboard-tag { background: var(--danger); color: #fff; }
+.metric-box.freeboard.danger .freeboard-tag { background: var(--danger); color: #fff; }
 
-/* กล่องการเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า */
+/* กล่องการเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า (Hero Position #2) */
+.metric-hero.change-box {
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
 .change-direction {
   font-size: 0.72rem;
   font-weight: 700;
@@ -1697,14 +1699,19 @@ img, canvas, svg { max-width: 100%; }
 .change-direction.steady { color: var(--text-3); }
 
 .metric-box.change-up {
-  border-left: 3px solid var(--danger);
+  border-left: 4px solid var(--danger);
+  background: linear-gradient(135deg, var(--danger-bg), var(--bg-card));
 }
 .metric-box.change-down {
-  border-left: 3px solid var(--success);
+  border-left: 4px solid var(--success);
+  background: linear-gradient(135deg, var(--success-bg), var(--bg-card));
 }
 .metric-box.change-steady {
-  border-left: 3px solid var(--border-2);
+  border-left: 4px solid var(--border-2);
 }
+
+.metric-box.change-up #modalChangeBadge { background: var(--danger); color: #fff; }
+.metric-box.change-down #modalChangeBadge { background: var(--success); color: #fff; }
 
 .text-success { color: var(--success) !important; }
 

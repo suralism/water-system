@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=15">
+  <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
   <div class="app-shell">
@@ -591,17 +591,17 @@
             <span class="metric-hint">เทียบระดับน้ำทะเลปานกลาง</span>
           </div>
 
-          <!-- กล่องหลัก 2: ระยะพ้นตลิ่ง (Critical) -->
-          <div class="metric-box metric-hero freeboard" id="modalFreeboardBox">
+          <!-- กล่องหลัก 2: การเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า -->
+          <div class="metric-box metric-hero change-box" id="modalChangeBox">
             <div class="metric-head">
-              <span class="metric-title">ระยะพ้นตลิ่ง</span>
-              <span class="metric-pill freeboard-tag">สถานะ</span>
+              <span class="metric-title">การเปลี่ยนแปลง</span>
+              <span class="metric-pill" id="modalChangeBadge">24 ชม.</span>
             </div>
             <div class="metric-body">
-              <span class="metric-num" id="modalFreeboardM">-</span>
-              <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
+              <span class="metric-num" id="modalWaterChangeVal">-</span>
+              <span class="metric-unit" id="modalWaterChangeUnit"></span>
             </div>
-            <span class="metric-hint">ระยะห่างถึงขอบตลิ่ง</span>
+            <span class="metric-hint" id="modalWaterChangeHint">เทียบ 12.00 น. เมื่อวาน</span>
           </div>
 
           <!-- กล่องรอง 1: ระดับตลิ่ง -->
@@ -616,17 +616,17 @@
             <span class="metric-hint">จุดเริ่มล้นตลิ่ง</span>
           </div>
 
-          <!-- กล่องรอง 2: การเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า -->
-          <div class="metric-box" id="modalChangeBox">
+          <!-- กล่องรอง 2: ระยะพ้นตลิ่ง (Critical) -->
+          <div class="metric-box freeboard" id="modalFreeboardBox">
             <div class="metric-head">
-              <span class="metric-title">การเปลี่ยนแปลง</span>
-              <span class="metric-pill" id="modalChangeBadge">24 ชม.</span>
+              <span class="metric-title">ระยะพ้นตลิ่ง</span>
+              <span class="metric-pill freeboard-tag">สถานะ</span>
             </div>
             <div class="metric-body">
-              <span class="metric-num" id="modalWaterChangeVal">-</span>
-              <span class="metric-unit" id="modalWaterChangeUnit"></span>
+              <span class="metric-num" id="modalFreeboardM">-</span>
+              <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
             </div>
-            <span class="metric-hint" id="modalWaterChangeHint">เทียบ 12.00 น. เมื่อวาน</span>
+            <span class="metric-hint">ระยะห่างถึงขอบตลิ่ง</span>
           </div>
         </div>
 
@@ -734,7 +734,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=17"></script>
+  <script src="app.js?v=18"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

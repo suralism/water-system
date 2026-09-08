@@ -1377,7 +1377,7 @@ async function openWaterModal(stationId) {
   }
   if (changeUnitEl) changeUnitEl.textContent = "";
   if (changeHintEl) changeHintEl.textContent = "เทียบ 12.00 น. เมื่อวาน";
-  if (changeBox) changeBox.className = "metric-box";
+  if (changeBox) changeBox.className = "metric-box metric-hero change-box";
 
   const freeboardEl = document.getElementById("modalFreeboardM");
   const freeboardUnitEl = document.getElementById("modalFreeboardUnit");
@@ -1399,7 +1399,7 @@ async function openWaterModal(stationId) {
   }
 
   if (freeboardBox) {
-    freeboardBox.className = `metric-box metric-hero freeboard ${isOverflow ? 'danger' : isWarning ? 'warning' : 'safe'}`;
+    freeboardBox.className = `metric-box freeboard ${isOverflow ? 'danger' : isWarning ? 'warning' : 'safe'}`;
   }
 
   const statusPill = document.getElementById("modalStatusPill");
@@ -2292,7 +2292,7 @@ function updateWaterChangeMetric(points) {
     changeValEl.className = "metric-num text-muted";
     if (changeUnitEl) changeUnitEl.textContent = "";
     if (changeHintEl) changeHintEl.textContent = "ไม่มีข้อมูล 12.00 น. เมื่อวาน";
-    if (changeBox) changeBox.className = "metric-box";
+    if (changeBox) changeBox.className = "metric-box metric-hero change-box";
     return;
   }
 
