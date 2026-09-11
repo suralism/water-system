@@ -1573,7 +1573,22 @@ body.view-overview-active #rainKpiGrid {
 }
 @media (max-width: 768px) {
   #riverCorridorSection .river-corridor-cards {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 10px;
+    padding: 12px 14px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #riverCorridorSection .river-corridor-cards::-webkit-scrollbar {
+    display: none;
+  }
+  #riverCorridorSection .rc-card {
+    flex: 0 0 80%;
+    min-width: 245px;
+    scroll-snap-align: start;
+    padding: 12px 13px;
   }
   .rc-hint-desktop { display: none; }
 }
@@ -3201,32 +3216,109 @@ body.view-overview-active #rainKpiGrid {
   }
 
   /* Overview Chart Card บนมือถือ */
-  .ov-chart-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .ov-chart-header { flex-direction: column; align-items: stretch; gap: 8px; }
   .ov-chart-title-area { flex-direction: column; align-items: stretch; gap: 8px; }
   .ov-station-select-wrap { width: 100%; }
-  .ov-select-wrapper select { max-width: 100%; width: 100%; }
-  .ov-chart-quick-stats { width: 100%; justify-content: space-between; gap: 8px; padding: 8px 10px; }
-  .ov-canvas-wrapper { height: 260px; padding: 8px 10px; }
-  .ov-chart-toolbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ov-select-wrapper select { max-width: 100%; width: 100%; font-size: 0.82rem; }
+  .ov-chart-quick-stats { width: 100%; justify-content: space-between; gap: 6px; padding: 7px 10px; }
+  .ov-canvas-wrapper { height: 230px; padding: 8px 10px; }
+  .ov-chart-toolbar { flex-direction: column; align-items: stretch; gap: 6px; padding: 6px 10px; }
   .ov-chart-toolbar .graph-toolbar-divider { display: none; }
+  .ov-chart-toolbar .graph-toolbar-group { width: 100%; justify-content: space-between; }
+  .ov-chart-toolbar .toolbar-label { font-size: 0.70rem; }
+  .btn-ov-range, .btn-ov-compare { flex: 1; text-align: center; padding: 5px 6px; font-size: 0.72rem; }
+
+  /* Rankings Grid & CTA Cards บนมือถือ */
+  .overview-rankings-grid .leaderboard-list { max-height: 290px; }
+  .cta-info p { display: none; }
+  .cta-card { padding: 12px 14px; }
+  .cta-icon-wrap { width: 38px; height: 38px; border-radius: 10px; font-size: 18px; }
+  .cta-icon-wrap svg { width: 19px; height: 19px; }
 
   .modal-backdrop { padding: 10px; align-items: flex-end; }
-  .modal-card { max-height: 92dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; }
-  .modal-body { padding: 14px 14px 18px; }
-  .modal-header { padding: 14px 16px; }
-  .modal-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .modal-card { max-height: 94dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; }
+  .modal-header { padding: 12px 16px; }
+  .modal-station-icon { width: 36px; height: 36px; border-radius: 10px; }
+  .modal-station-icon svg { width: 18px; height: 18px; }
+  .modal-header .modal-title-area h2 { font-size: 1rem; }
+  .modal-body { padding: 12px 14px 18px; gap: 11px; }
+  .modal-metrics-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .metric-box { padding: 10px 12px 8px; }
+  .metric-num { font-size: 1.25rem; }
+  .graph-toolbar { padding: 6px 10px; flex-direction: column; align-items: stretch; gap: 6px; }
+  .graph-toolbar .graph-toolbar-divider { display: none; }
+  .graph-toolbar-group { width: 100%; justify-content: space-between; }
+  .graph-toolbar .toolbar-label { font-size: 0.70rem; }
+  .btn-range, .btn-compare-year { flex: 1; text-align: center; padding: 5px 6px; font-size: 0.70rem; }
+  .chart-canvas-wrapper { height: 230px; padding: 10px; }
 
   .table-header-bar { flex-direction: column; align-items: flex-start; }
   .river-corridor-section { padding: 14px; }
 }
 
 @media (max-width: 640px) {
-  .overview-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .overview-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .overview-kpi-grid .ov-kpi-card:last-child { grid-column: span 2; }
-  .exec-summary-banner { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .exec-summary-banner { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; }
 }
 
 @media (max-width: 480px) {
+  .main-content { padding: 10px 10px 24px; gap: 12px; }
+
+  /* Topbar บนจอเล็กกะทัดรัด */
+  .topbar { height: 52px; padding: 0 10px; }
+  .topbar-brand-icon { width: 30px; height: 30px; border-radius: 9px; }
+  .topbar-brand-icon svg { width: 15px; height: 15px; }
+  .topbar-title { font-size: 0.90rem; }
+  .topbar-subtitle { font-size: 0.58rem; }
+  .topbar-btn { width: 33px; height: 33px; border-radius: 9px; }
+  .topbar-btn svg { width: 15px; height: 15px; }
+
+  /* Mobile Tabs กระชับ */
+  .mobile-view-tabs { gap: 4px; padding: 4px; }
+  .m-view-tab { padding: 7px 4px; font-size: 0.75rem; gap: 4px; }
+  .m-view-tab svg { width: 13px; height: 13px; }
+
+  /* KPI Cards ย่อ padding & font */
+  .ov-kpi-card { padding: 10px 11px 9px; border-radius: 12px; }
+  .ov-kpi-icon { width: 22px; height: 22px; border-radius: 6px; }
+  .ov-kpi-icon svg { width: 12px; height: 12px; }
+  .ov-kpi-title { font-size: 0.68rem; }
+  .ov-kpi-badge { font-size: 0.56rem; padding: 1px 6px; }
+  .ov-kpi-num { font-size: 1.30rem; }
+  .ov-kpi-unit { font-size: 0.65rem; }
+  .ov-kpi-hint { font-size: 0.58rem; }
+
+  /* Chart Card กระชับ */
+  .overview-chart-card { padding: 12px 13px; border-radius: 13px; gap: 10px; }
+  .ov-chart-icon { width: 34px; height: 34px; border-radius: 10px; }
+  .ov-chart-icon svg { width: 17px; height: 17px; }
+  .ov-chart-heading { font-size: 0.90rem; }
+  .ov-chart-sub { font-size: 0.68rem; }
+  .ov-select-wrapper select { font-size: 0.80rem; padding: 7px 28px 7px 10px; }
+  .ov-stat-item { font-size: 0.74rem; }
+  .ov-stat-val { font-size: 1.10rem; }
+  .ov-canvas-wrapper { height: 200px; padding: 6px 8px; }
+
+  /* Rankings & Watchlist */
+  .overview-rankings-grid .leaderboard-list { max-height: 260px; }
+  .panel-card-header { padding: 10px 12px; }
+  .panel-card-title h3 { font-size: 0.82rem; }
+  .sw-card { padding: 7px 9px; margin: 3px 3px; }
+  .sw-name { font-size: 0.78rem; }
+  .sw-fb { font-size: 0.78rem; }
+  .sw-sub { font-size: 0.66rem; }
+  .leader-item { padding: 7px 8px; }
+  .leader-name { font-size: 0.78rem; }
+  .leader-val { font-size: 0.86rem; }
+
+  /* 5 แม่น้ำสายหลัก */
+  #riverCorridorSection .rc-card { flex: 0 0 85%; min-width: 220px; padding: 10px 12px; }
+  .rc-river-name { font-size: 0.84rem; }
+  .rc-station-sub { font-size: 0.66rem; }
+  .rc-water-val { font-size: 1.15rem; }
+  .rc-freeboard-text { font-size: 0.68rem; }
+
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .sidebar-leaderboards { grid-template-columns: 1fr; }
   .gps-results-grid { grid-template-columns: 1fr; }
