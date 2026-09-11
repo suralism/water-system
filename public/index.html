@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
 </head>
 <body>
   <div class="app-shell">
@@ -547,83 +547,80 @@
               </div>
             </div>
 
-            <!-- Two-Column Layout (Desktop Split, Mobile Stack) -->
-            <div class="overview-split-layout">
-              <!-- คอลัมน์ซ้าย: สถานการณ์ระดับน้ำ -->
-              <div class="overview-col-left">
-                <!-- Watchlist Card -->
-                <div class="overview-panel-card">
-                  <div class="panel-card-header">
-                    <div class="panel-card-title">
-                      <i data-lucide="alert-octagon" class="icon-sm text-danger"></i>
-                      <h3>สถานีเฝ้าระวัง &amp; น้ำล้นตลิ่ง</h3>
-                    </div>
-                    <span id="ovWaterSideBadge" class="badge danger">0 สถานี</span>
-                  </div>
-                  <div class="leaderboard-list" id="ovWaterLeaderList">
-                    <div class="loading-placeholder">กำลังโหลด...</div>
-                  </div>
+            <!-- 3. สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี (Full Width - แถวเดียว 5 ช่องสมดุล) -->
+            <div class="overview-panel-card" id="riverCorridorSection" aria-label="สถานการณ์ 5 แม่น้ำสายหลัก">
+              <div class="panel-card-header river-header">
+                <div class="panel-card-title">
+                  <i data-lucide="route" class="icon-sm text-cyan"></i>
+                  <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
                 </div>
+                <div class="panel-card-header-right">
+                  <span class="rc-hint-desktop">คลิกการ์ดเพื่อดูตำแหน่งบนแผนที่</span>
+                  <span class="rc-live-tag"><span class="rc-dot"></span> สด</span>
+                </div>
+              </div>
+              <div class="river-corridor-cards" id="riverCorridorCards">
+                <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับน้ำใน 5 ลำน้ำหลัก...</div>
+              </div>
+            </div>
 
-                <!-- 5 แม่น้ำสายหลัก Card -->
-                <div class="overview-panel-card" id="riverCorridorSection" aria-label="สถานการณ์ 5 แม่น้ำสายหลัก">
-                  <div class="panel-card-header">
-                    <div class="panel-card-title">
-                      <i data-lucide="route" class="icon-sm text-cyan"></i>
-                      <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
-                    </div>
-                    <span class="rc-live-tag"><span class="rc-dot"></span> สด</span>
+            <!-- 4. รายงานเปรียบเทียบระดับน้ำ & น้ำฝน (2 คอลัมน์บาลานซ์ 50/50 เท่ากันสมบูรณ์) -->
+            <div class="overview-rankings-grid">
+              <!-- ฝั่งซ้าย: สถานีเฝ้าระวัง & น้ำล้นตลิ่ง -->
+              <div class="overview-panel-card">
+                <div class="panel-card-header">
+                  <div class="panel-card-title">
+                    <i data-lucide="alert-octagon" class="icon-sm text-danger"></i>
+                    <h3>สถานีเฝ้าระวัง &amp; น้ำล้นตลิ่ง</h3>
                   </div>
-                  <div class="river-corridor-cards" id="riverCorridorCards">
-                    <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับน้ำใน 5 ลำน้ำหลัก...</div>
-                  </div>
+                  <span id="ovWaterSideBadge" class="badge danger">0 สถานี</span>
+                </div>
+                <div class="leaderboard-list" id="ovWaterLeaderList">
+                  <div class="loading-placeholder">กำลังโหลด...</div>
                 </div>
               </div>
 
-              <!-- คอลัมน์ขวา: สถานการณ์น้ำฝน & ทางลัด -->
-              <div class="overview-col-right">
-                <!-- Top 10 Rain Card -->
-                <div class="overview-panel-card">
-                  <div class="panel-card-header rain-header">
-                    <div class="panel-card-title">
-                      <i data-lucide="cloud-rain" class="icon-sm text-blue"></i>
-                      <h3>10 อันดับสถานีฝนสะสมสูงสุด 24 ชม.</h3>
-                    </div>
-                    <span class="badge rain" id="ovRainSideBadge">Top 10</span>
+              <!-- ฝั่งขวา: 10 อันดับสถานีฝนสะสมสูงสุด 24 ชม. -->
+              <div class="overview-panel-card">
+                <div class="panel-card-header rain-header">
+                  <div class="panel-card-title">
+                    <i data-lucide="cloud-rain" class="icon-sm text-blue"></i>
+                    <h3>10 อันดับสถานีฝนสะสมสูงสุด 24 ชม.</h3>
                   </div>
-                  <div class="leaderboard-list" id="ovRainLeaderList">
-                    <div class="loading-placeholder">กำลังโหลด...</div>
-                  </div>
+                  <span class="badge rain" id="ovRainSideBadge">Top 10</span>
                 </div>
-
-                <!-- Quick Action CTA Cards -->
-                <div class="overview-cta-box">
-                  <div class="cta-card cta-map" id="ctaOpenMap" role="button" tabindex="0" aria-label="เปิดดูแผนที่สถานี">
-                    <div class="cta-icon-wrap">
-                      <i data-lucide="map" class="icon-md"></i>
-                    </div>
-                    <div class="cta-info">
-                      <h4>แผนที่พิกัดสถานี &amp; เรดาร์ฝนสด</h4>
-                      <p>ดูตำแหน่งพิกัดสถานีทั้งหมด 67 จุด และภาพเรดาร์กลุ่มฝนสด</p>
-                    </div>
-                    <span class="btn-cta">
-                      <span>เปิดแผนที่</span> <i data-lucide="chevron-right" class="icon-xs"></i>
-                    </span>
-                  </div>
-
-                  <div class="cta-card cta-table" id="ctaOpenTable" role="button" tabindex="0" aria-label="เปิดดูตารางข้อมูล">
-                    <div class="cta-icon-wrap table-icon">
-                      <i data-lucide="table" class="icon-md"></i>
-                    </div>
-                    <div class="cta-info">
-                      <h4>ตารางข้อมูลระดับน้ำและฝนละเอียด</h4>
-                      <p>ดูตารางระดับน้ำรายสถานี ลุ่มน้ำ ปริมาณฝน 1 ชม. / 24 ชม. และค้นหาตามอำเภอ</p>
-                    </div>
-                    <span class="btn-cta secondary">
-                      <span>ดูตาราง</span> <i data-lucide="chevron-right" class="icon-xs"></i>
-                    </span>
-                  </div>
+                <div class="leaderboard-list" id="ovRainLeaderList">
+                  <div class="loading-placeholder">กำลังโหลด...</div>
                 </div>
+              </div>
+            </div>
+
+            <!-- 5. ทางลัดเปิดมุมมอง (2 คอลัมน์บาลานซ์ แผนที่ 50% & ตาราง 50%) -->
+            <div class="overview-cta-grid">
+              <div class="cta-card cta-map" id="ctaOpenMap" role="button" tabindex="0" aria-label="เปิดดูแผนที่สถานี">
+                <div class="cta-icon-wrap">
+                  <i data-lucide="map" class="icon-md"></i>
+                </div>
+                <div class="cta-info">
+                  <h4>แผนที่พิกัดสถานี &amp; เรดาร์ฝนสด</h4>
+                  <p>ดูตำแหน่งพิกัดสถานีทั้งหมด 67 จุด และภาพเรดาร์กลุ่มฝนสด</p>
+                </div>
+                <span class="btn-cta">
+                  <span>เปิดแผนที่</span> <i data-lucide="chevron-right" class="icon-xs"></i>
+                </span>
+              </div>
+
+              <div class="cta-card cta-table" id="ctaOpenTable" role="button" tabindex="0" aria-label="เปิดดูตารางข้อมูล">
+                <div class="cta-icon-wrap table-icon">
+                  <i data-lucide="table" class="icon-md"></i>
+                </div>
+                <div class="cta-info">
+                  <h4>ตารางข้อมูลระดับน้ำและฝนละเอียด</h4>
+                  <p>ดูตารางระดับน้ำรายสถานี ลุ่มน้ำ ปริมาณฝน 1 ชม. / 24 ชม. และค้นหาตามอำเภอ</p>
+                </div>
+                <span class="btn-cta secondary">
+                  <span>ดูตาราง</span> <i data-lucide="chevron-right" class="icon-xs"></i>
+                </span>
               </div>
             </div>
           </div>
@@ -963,7 +960,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=26"></script>
+  <script src="app.js?v=27"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();
