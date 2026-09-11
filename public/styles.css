@@ -615,21 +615,40 @@ img, canvas, svg { max-width: 100%; }
   gap: 12px;
   padding: 13px 18px;
   border-radius: var(--r-md);
-  border: 1px solid var(--danger-border);
-  background: var(--danger-bg);
-  color: var(--danger-text);
+  border: 1.5px solid #f87171;
+  border-left: 5px solid #ef4444;
+  background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 60%, #fef2f2 100%);
+  color: #991b1b;
   font-weight: 700;
   font-size: 0.92rem;
-  box-shadow: var(--shadow-1);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
   cursor: pointer;
   transition: transform var(--t-fast), box-shadow var(--t-fast);
 }
-.alert-banner:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
-.alert-banner svg { width: 20px; height: 20px; flex-shrink: 0; }
+.alert-banner:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.22); }
+.alert-banner svg { width: 22px; height: 22px; flex-shrink: 0; color: #dc2626; }
+
 .alert-banner.warning {
-  border-color: var(--warning-border);
-  background: var(--warning-bg);
-  color: var(--warning-text);
+  border-color: #fbbf24;
+  border-left: 5px solid #f59e0b;
+  background: linear-gradient(90deg, #fffbeb 0%, #fef3c7 60%, #fffbeb 100%);
+  color: #92400e;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.16);
+}
+.alert-banner.warning svg { color: #d97706; }
+
+[data-theme="dark"] .alert-banner {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.22) 0%, rgba(185, 28, 28, 0.18) 100%);
+  border-color: rgba(239, 68, 68, 0.45);
+  border-left-color: #f87171;
+  color: #fecaca;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+[data-theme="dark"] .alert-banner.warning {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.22) 0%, rgba(180, 83, 9, 0.18) 100%);
+  border-color: rgba(245, 158, 11, 0.45);
+  border-left-color: #fbbf24;
+  color: #fef08a;
 }
 
 /* ---------- 6. GPS proximity box ---------- */
@@ -974,19 +993,19 @@ body.view-overview-active #rainKpiGrid {
   display: flex;
 }
 
-/* 1. Executive Summary Banner */
+/* 1. Executive Summary Banner — มิติสดใส มีรัศมีแสง */
 .exec-summary-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 18px;
+  padding: 14px 20px;
   border-radius: var(--r-lg);
-  border: 1px solid var(--border-1);
+  border: 1.5px solid #bae6fd;
   background:
-    radial-gradient(400px 120px at 0% 0%, rgba(56, 189, 248, 0.12), transparent 75%),
-    linear-gradient(180deg, var(--bg-card), var(--bg-subtle));
-  box-shadow: var(--shadow-1);
+    radial-gradient(500px 140px at 0% 0%, rgba(56, 189, 248, 0.22), transparent 75%),
+    linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.08);
   position: relative;
   overflow: hidden;
 }
@@ -996,8 +1015,16 @@ body.view-overview-active #rainKpiGrid {
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #38bdf8, #0ea5e9, transparent 80%);
+  height: 3px;
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9, #0284c7 70%, transparent 100%);
+}
+
+[data-theme="dark"] .exec-summary-banner {
+  background:
+    radial-gradient(500px 140px at 0% 0%, rgba(56, 189, 248, 0.2), transparent 75%),
+    linear-gradient(135deg, #0d1b2e 0%, #0a1728 100%);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .exec-summary-left {
@@ -1013,17 +1040,17 @@ body.view-overview-active #rainKpiGrid {
   gap: 8px;
 }
 .exec-status-title {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 800;
   color: var(--text-1);
   letter-spacing: 0.01em;
 }
 
 .exec-summary-text {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 600;
   color: var(--text-2);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .exec-summary-right {
@@ -1032,18 +1059,24 @@ body.view-overview-active #rainKpiGrid {
 .exec-time-tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--brand-primary);
-  padding: 4px 10px;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #0284c7;
+  padding: 5px 12px;
   border-radius: var(--r-full);
-  background: var(--brand-soft);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: #e0f2fe;
+  border: 1px solid #7dd3fc;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);
   white-space: nowrap;
 }
+[data-theme="dark"] .exec-time-tag {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.4);
+}
 
-/* 2. Unified Overview 5-KPI Grid */
+/* 2. Unified Overview 5-KPI Grid — สดใส มีชีวิตชีวา (Tinted Vibrant Cards) */
 .overview-kpi-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -1054,20 +1087,19 @@ body.view-overview-active #rainKpiGrid {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 5px;
+  gap: 6px;
   padding: 14px 14px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border-1);
+  border-radius: 14px;
+  border: 1.5px solid var(--border-1);
   background: var(--bg-card);
-  box-shadow: var(--shadow-1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   position: relative;
   overflow: hidden;
   transition: transform var(--t-fast), box-shadow var(--t-fast), border-color var(--t-fast);
 }
 .ov-kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-2);
-  border-color: var(--border-2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
 }
 
 .ov-kpi-card::before {
@@ -1076,14 +1108,77 @@ body.view-overview-active #rainKpiGrid {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 3.5px;
   background: var(--border-2);
 }
-.ov-kpi-card.danger::before { background: linear-gradient(90deg, #dc2626, #ef4444); }
-.ov-kpi-card.warning::before { background: linear-gradient(90deg, #d97706, #f59e0b); }
-.ov-kpi-card.normal::before { background: linear-gradient(90deg, #059669, #10b981); }
-.ov-kpi-card.rain-peak::before { background: linear-gradient(90deg, #0284c7, #38bdf8); }
-.ov-kpi-card.rain-active::before { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+
+/* Soft Color Gradients สำหรับการ์ดแต่ละประเภท */
+.ov-kpi-card.danger {
+  background: linear-gradient(145deg, #ffffff 0%, #fff1f2 100%);
+  border-color: #fecdd3;
+}
+.ov-kpi-card.danger::before {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+.ov-kpi-card.danger:hover { border-color: #f87171; }
+
+.ov-kpi-card.warning {
+  background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
+  border-color: #fde68a;
+}
+.ov-kpi-card.warning::before {
+  background: linear-gradient(90deg, #d97706, #f59e0b);
+}
+.ov-kpi-card.warning:hover { border-color: #fbbf24; }
+
+.ov-kpi-card.normal {
+  background: linear-gradient(145deg, #ffffff 0%, #ecfdf5 100%);
+  border-color: #a7f3d0;
+}
+.ov-kpi-card.normal::before {
+  background: linear-gradient(90deg, #059669, #10b981);
+}
+.ov-kpi-card.normal:hover { border-color: #34d399; }
+
+.ov-kpi-card.rain-peak {
+  background: linear-gradient(145deg, #ffffff 0%, #f0f9ff 100%);
+  border-color: #bae6fd;
+}
+.ov-kpi-card.rain-peak::before {
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+.ov-kpi-card.rain-peak:hover { border-color: #38bdf8; }
+
+.ov-kpi-card.rain-active {
+  background: linear-gradient(145deg, #ffffff 0%, #eff6ff 100%);
+  border-color: #bfdbfe;
+}
+.ov-kpi-card.rain-active::before {
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+.ov-kpi-card.rain-active:hover { border-color: #60a5fa; }
+
+/* Dark Mode Colors */
+[data-theme="dark"] .ov-kpi-card.danger {
+  background: linear-gradient(145deg, #181926 0%, rgba(239, 68, 68, 0.18) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+[data-theme="dark"] .ov-kpi-card.warning {
+  background: linear-gradient(145deg, #1d1c25 0%, rgba(245, 158, 11, 0.18) 100%);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+[data-theme="dark"] .ov-kpi-card.normal {
+  background: linear-gradient(145deg, #13222b 0%, rgba(16, 185, 129, 0.18) 100%);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+[data-theme="dark"] .ov-kpi-card.rain-peak {
+  background: linear-gradient(145deg, #122438 0%, rgba(56, 189, 248, 0.18) 100%);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+[data-theme="dark"] .ov-kpi-card.rain-active {
+  background: linear-gradient(145deg, #131e38 0%, rgba(96, 165, 250, 0.18) 100%);
+  border-color: rgba(96, 165, 250, 0.4);
+}
 
 .ov-kpi-head {
   display: flex;
@@ -1091,25 +1186,57 @@ body.view-overview-active #rainKpiGrid {
   justify-content: space-between;
   gap: 6px;
 }
+
+.ov-kpi-head-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+/* ไอคอนการ์ด KPI สดใส */
+.ov-kpi-icon {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.ov-kpi-icon svg { width: 14px; height: 14px; }
+.ov-kpi-icon.danger { background: #fee2e2; color: #dc2626; }
+.ov-kpi-icon.warning { background: #fef3c7; color: #d97706; }
+.ov-kpi-icon.normal { background: #dcfce7; color: #059669; }
+.ov-kpi-icon.rain-peak { background: #e0f2fe; color: #0284c7; }
+.ov-kpi-icon.rain-active { background: #dbeafe; color: #2563eb; }
+
+[data-theme="dark"] .ov-kpi-icon.danger { background: rgba(239, 68, 68, 0.28); color: #f87171; }
+[data-theme="dark"] .ov-kpi-icon.warning { background: rgba(245, 158, 11, 0.28); color: #fbbf24; }
+[data-theme="dark"] .ov-kpi-icon.normal { background: rgba(16, 185, 129, 0.28); color: #34d399; }
+[data-theme="dark"] .ov-kpi-icon.rain-peak { background: rgba(56, 189, 248, 0.28); color: #38bdf8; }
+[data-theme="dark"] .ov-kpi-icon.rain-active { background: rgba(96, 165, 250, 0.28); color: #60a5fa; }
+
 .ov-kpi-title {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  color: var(--text-3);
+  color: var(--text-2);
   white-space: nowrap;
 }
 
 .ov-kpi-badge {
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  padding: 1px 7px;
+  padding: 2px 8px;
   border-radius: var(--r-full);
   white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
-.ov-kpi-badge.danger { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
-.ov-kpi-badge.warning { background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning-border); }
-.ov-kpi-badge.normal { background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border); }
-.ov-kpi-badge.rain { background: var(--brand-soft); color: var(--brand-primary); border: 1px solid rgba(56, 189, 248, 0.3); }
-.ov-kpi-badge.active-rain { background: var(--rain-bg); color: var(--rain-color); border: 1px solid var(--rain-border); }
+.ov-kpi-badge.danger { background: #ef4444; color: #fff; }
+.ov-kpi-badge.warning { background: #f59e0b; color: #fff; }
+.ov-kpi-badge.normal { background: #10b981; color: #fff; }
+.ov-kpi-badge.rain { background: #0284c7; color: #fff; }
+.ov-kpi-badge.active-rain { background: #2563eb; color: #fff; }
 
 .ov-kpi-body {
   display: flex;
@@ -1146,18 +1273,28 @@ body.view-overview-active #rainKpiGrid {
   opacity: 0.85;
 }
 
-/* 2.5 Overview Chart Card (กราฟระดับน้ำรายสถานีบนหน้าแรก พร้อม Dropdown) */
+/* 2.5 Overview Chart Card (กราฟระดับน้ำรายสถานีบนหน้าแรก พร้อม Dropdown) — มิติสดใส พรีเมียม */
 .overview-chart-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--border-1);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-1);
-  padding: 16px 18px;
+  gap: 14px;
+  border-radius: 16px;
+  border: 1.5px solid #bae6fd;
+  background:
+    radial-gradient(600px 180px at 0% 0%, rgba(56, 189, 248, 0.12), transparent 75%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.07);
+  padding: 18px 20px;
   position: relative;
   overflow: hidden;
+}
+
+[data-theme="dark"] .overview-chart-card {
+  background:
+    radial-gradient(600px 180px at 0% 0%, rgba(56, 189, 248, 0.16), transparent 75%),
+    linear-gradient(180deg, #111a2e 0%, #0b1120 100%);
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
 }
 
 .overview-chart-card::before {
@@ -1166,8 +1303,8 @@ body.view-overview-active #rainKpiGrid {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #0284c7, #38bdf8, #0ea5e9);
+  height: 3.5px;
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #0ea5e9, #38bdf8);
 }
 
 .ov-chart-header {
@@ -1189,60 +1326,67 @@ body.view-overview-active #rainKpiGrid {
 .ov-chart-title-lead {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .ov-chart-icon {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(2, 132, 199, 0.1));
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  color: var(--brand-primary);
-  font-size: 18px;
+  border-radius: 13px;
+  background: linear-gradient(140deg, #38bdf8 0%, #0284c7 60%, #0369a1 100%);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  color: #ffffff;
+  font-size: 20px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
 }
-.ov-chart-icon svg { width: 20px; height: 20px; }
+.ov-chart-icon svg { width: 22px; height: 22px; }
 
 .ov-chart-heading {
-  font-size: 0.96rem;
+  font-size: 1.02rem;
   font-weight: 800;
   color: var(--text-1);
   letter-spacing: -0.01em;
 }
 
 .ov-chart-sub {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--text-3);
   font-weight: 500;
 }
 
 /* Station Select Dropdown in Overview Card */
 .ov-station-select-wrap {
-  min-width: 240px;
+  min-width: 250px;
 }
 
 .ov-select-wrapper select {
   width: 100%;
-  max-width: 340px;
-  padding: 8px 32px 8px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border-2);
-  background-color: var(--bg-subtle);
+  max-width: 350px;
+  padding: 9px 34px 9px 14px;
+  border-radius: 12px;
+  border: 2px solid #bae6fd;
+  background-color: var(--bg-card);
   color: var(--text-1);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);
   transition: all var(--t-fast);
 }
 .ov-select-wrapper select:hover {
-  border-color: var(--brand-bright);
+  border-color: var(--brand-primary);
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.16);
 }
 .ov-select-wrapper select:focus {
   border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+}
+[data-theme="dark"] .ov-select-wrapper select {
+  background-color: #1a2438;
+  border-color: rgba(56, 189, 248, 0.4);
 }
 
 /* Quick Stats Row in Card Header — เด่น คมชัด สีสันสดใส */
@@ -1250,19 +1394,19 @@ body.view-overview-active #rainKpiGrid {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 7px 16px;
+  padding: 8px 16px;
   border-radius: 12px;
-  background: linear-gradient(180deg, var(--bg-card), var(--bg-subtle));
-  border: 1.5px solid var(--border-2);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  border: 1.5px solid #bae6fd;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.08);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 
 [data-theme="dark"] .ov-chart-quick-stats {
-  background: linear-gradient(180deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .ov-stat-item {
@@ -1392,10 +1536,11 @@ body.view-overview-active #rainKpiGrid {
 
 .overview-panel-card {
   border-radius: var(--r-lg);
-  border: 1px solid var(--border-1);
+  border: 1.5px solid var(--border-1);
   background: var(--bg-card);
-  box-shadow: var(--shadow-1);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
   overflow: hidden;
+  transition: border-color var(--t-fast);
 }
 
 .panel-card-header {
@@ -1404,11 +1549,30 @@ body.view-overview-active #rainKpiGrid {
   justify-content: space-between;
   gap: 10px;
   padding: 13px 16px;
-  border-bottom: 1px solid var(--border-1);
-  background: var(--bg-subtle);
+  border-bottom: 1.5px solid #fed7aa;
+  background: linear-gradient(90deg, #fff7ed 0%, #fffbeb 50%, var(--bg-card) 100%);
 }
+[data-theme="dark"] .panel-card-header {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, rgba(239, 68, 68, 0.06) 60%, var(--bg-card) 100%);
+  border-bottom-color: rgba(245, 158, 11, 0.3);
+}
+
 .panel-card-header.rain-header {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.06), var(--bg-subtle));
+  border-bottom: 1.5px solid #bfdbfe;
+  background: linear-gradient(90deg, #eff6ff 0%, #f0f9ff 50%, var(--bg-card) 100%);
+}
+[data-theme="dark"] .panel-card-header.rain-header {
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.14) 0%, rgba(56, 189, 248, 0.06) 60%, var(--bg-card) 100%);
+  border-bottom-color: rgba(59, 130, 246, 0.3);
+}
+
+#riverCorridorSection .panel-card-header {
+  border-bottom: 1.5px solid #bae6fd;
+  background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 50%, var(--bg-card) 100%);
+}
+[data-theme="dark"] #riverCorridorSection .panel-card-header {
+  background: linear-gradient(90deg, rgba(2, 132, 199, 0.14) 0%, rgba(56, 189, 248, 0.06) 60%, var(--bg-card) 100%);
+  border-bottom-color: rgba(56, 189, 248, 0.3);
 }
 .panel-card-title {
   display: flex;
@@ -1749,16 +1913,35 @@ body.view-overview-active #rainKpiGrid {
   flex-direction: column;
   gap: 3px;
   border: 1px solid var(--border-1);
-  border-left: 3px solid var(--border-2);
+  border-left: 4px solid var(--border-2);
   border-radius: 10px;
-  background: var(--bg-subtle);
-  padding: 8px 11px;
-  margin: 3px 4px;
-  transition: background var(--t-fast), border-color var(--t-fast);
+  background: var(--bg-card);
+  padding: 9px 12px;
+  margin: 4px 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: all var(--t-fast);
 }
-.sw-card:hover { background: var(--bg-inset); }
-.sw-card.danger { border-left-color: var(--danger); }
-.sw-card.warning { border-left-color: var(--warning); }
+.sw-card:hover {
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+.sw-card.danger {
+  border-left-color: #ef4444;
+  background: linear-gradient(90deg, #fff5f5 0%, var(--bg-card) 100%);
+}
+.sw-card.warning {
+  border-left-color: #f59e0b;
+  background: linear-gradient(90deg, #fffbeb 0%, var(--bg-card) 100%);
+}
+
+[data-theme="dark"] .sw-card.danger {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.12) 0%, var(--bg-card) 100%);
+  border-left-color: #f87171;
+}
+[data-theme="dark"] .sw-card.warning {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.12) 0%, var(--bg-card) 100%);
+  border-left-color: #fbbf24;
+}
 
 .sw-top {
   display: flex;
@@ -2009,20 +2192,44 @@ body.view-overview-active #rainKpiGrid {
 }
 
 .rc-card {
-  border: 1px solid var(--border-1);
-  border-radius: var(--r-md);
-  background: var(--bg-subtle);
+  border: 1.5px solid var(--border-1);
+  border-radius: 14px;
+  background: var(--bg-card);
   padding: 13px 14px;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: transform var(--t-fast), box-shadow var(--t-fast), border-color var(--t-fast);
 }
 .rc-card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-2);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
   border-color: var(--brand-bright);
 }
-.rc-card.danger { border-color: var(--danger-border); }
-.rc-card.warning { border-color: var(--warning-border); }
+.rc-card.normal {
+  background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
+  border-color: #bbf7d0;
+}
+.rc-card.warning {
+  background: linear-gradient(145deg, #ffffff 0%, #fffbeb 100%);
+  border-color: #fde68a;
+}
+.rc-card.danger {
+  background: linear-gradient(145deg, #ffffff 0%, #fef2f2 100%);
+  border-color: #fecaca;
+}
+
+[data-theme="dark"] .rc-card.normal {
+  background: linear-gradient(145deg, #111a2e 0%, rgba(16, 185, 129, 0.12) 100%);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+[data-theme="dark"] .rc-card.warning {
+  background: linear-gradient(145deg, #111a2e 0%, rgba(245, 158, 11, 0.12) 100%);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+[data-theme="dark"] .rc-card.danger {
+  background: linear-gradient(145deg, #111a2e 0%, rgba(239, 68, 68, 0.12) 100%);
+  border-color: rgba(239, 68, 68, 0.35);
+}
 
 .rc-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
 .rc-river-name { font-size: 0.9rem; font-weight: 800; color: var(--text-1); }

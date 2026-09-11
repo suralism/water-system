@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
   <div class="app-shell">
@@ -400,7 +400,10 @@
             <div class="overview-kpi-grid">
               <div class="ov-kpi-card danger">
                 <div class="ov-kpi-head">
-                  <span class="ov-kpi-title">น้ำล้นตลิ่ง</span>
+                  <div class="ov-kpi-head-left">
+                    <span class="ov-kpi-icon danger"><i data-lucide="alert-octagon"></i></span>
+                    <span class="ov-kpi-title">น้ำล้นตลิ่ง</span>
+                  </div>
                   <span class="ov-kpi-badge danger">วิกฤต</span>
                 </div>
                 <div class="ov-kpi-body">
@@ -412,7 +415,10 @@
 
               <div class="ov-kpi-card warning">
                 <div class="ov-kpi-head">
-                  <span class="ov-kpi-title">เฝ้าระวังตลิ่ง</span>
+                  <div class="ov-kpi-head-left">
+                    <span class="ov-kpi-icon warning"><i data-lucide="alert-triangle"></i></span>
+                    <span class="ov-kpi-title">เฝ้าระวังตลิ่ง</span>
+                  </div>
                   <span class="ov-kpi-badge warning">ปริ่มน้ำ</span>
                 </div>
                 <div class="ov-kpi-body">
@@ -424,7 +430,10 @@
 
               <div class="ov-kpi-card normal">
                 <div class="ov-kpi-head">
-                  <span class="ov-kpi-title">ระดับน้ำปกติ</span>
+                  <div class="ov-kpi-head-left">
+                    <span class="ov-kpi-icon normal"><i data-lucide="shield-check"></i></span>
+                    <span class="ov-kpi-title">ระดับน้ำปกติ</span>
+                  </div>
                   <span class="ov-kpi-badge normal">ปลอดภัย</span>
                 </div>
                 <div class="ov-kpi-body">
@@ -436,7 +445,10 @@
 
               <div class="ov-kpi-card rain-peak">
                 <div class="ov-kpi-head">
-                  <span class="ov-kpi-title">ฝนสูงสุด 24 ชม.</span>
+                  <div class="ov-kpi-head-left">
+                    <span class="ov-kpi-icon rain-peak"><i data-lucide="cloud-lightning"></i></span>
+                    <span class="ov-kpi-title">ฝนสูงสุด 24 ชม.</span>
+                  </div>
                   <span class="ov-kpi-badge rain">สูงสุด</span>
                 </div>
                 <div class="ov-kpi-body">
@@ -448,7 +460,10 @@
 
               <div class="ov-kpi-card rain-active">
                 <div class="ov-kpi-head">
-                  <span class="ov-kpi-title">จุดตรวจที่มีฝน</span>
+                  <div class="ov-kpi-head-left">
+                    <span class="ov-kpi-icon rain-active"><i data-lucide="droplets"></i></span>
+                    <span class="ov-kpi-title">จุดตรวจที่มีฝน</span>
+                  </div>
                   <span class="ov-kpi-badge active-rain">24 ชม.</span>
                 </div>
                 <div class="ov-kpi-body">
@@ -948,7 +963,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=25"></script>
+  <script src="app.js?v=26"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();
