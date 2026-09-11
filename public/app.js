@@ -3032,29 +3032,16 @@ function setupEventListeners() {
     });
   });
 
-  // Flood Year Comparison Buttons (พ.ศ. 2562 / 2565 / ทั้งสองปี)
+  // Flood Year Comparison Buttons (พ.ศ. 2562 / 2565)
   document.querySelectorAll(".btn-compare-year").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const year = btn.dataset.year;
-      if (year === "both") {
-        // เลือกทั้งสองปี หรือยกเลิกทั้งหมดถ้ากดซ้ำตอนเปิดอยู่แล้ว
-        const allOn = compareYears.length === FLOOD_YEARS.length;
-        compareYears = allOn ? [] : [...FLOOD_YEARS];
-        document.querySelectorAll(".btn-compare-year").forEach((b) =>
-          b.classList.toggle("active", !allOn)
-        );
-      } else {
-        const y = Number(year);
-        compareYears = compareYears.includes(y)
-          ? compareYears.filter((v) => v !== y)
-          : [...compareYears, y].sort();
-        btn.classList.toggle("active", compareYears.includes(y));
-        const bothBtn = document.querySelector('.btn-compare-year[data-year="both"]');
-        bothBtn?.classList.toggle("active", compareYears.length === FLOOD_YEARS.length);
-      }
-      document.querySelectorAll(".btn-compare-year").forEach((b) =>
-        b.setAttribute("aria-pressed", String(b.classList.contains("active")))
-      );
+      const y = Number(btn.dataset.year);
+      if (isNaN(y)) return;
+      compareYears = compareYears.includes(y)
+        ? compareYears.filter((v) => v !== y)
+        : [...compareYears, y].sort();
+      btn.classList.toggle("active", compareYears.includes(y));
+      btn.setAttribute("aria-pressed", String(compareYears.includes(y)));
       loadStationGraph();
     });
   });

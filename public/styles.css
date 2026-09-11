@@ -1950,12 +1950,6 @@ img, canvas, svg { max-width: 100%; }
   color: #fff;
   box-shadow: 0 1px 4px rgba(16, 185, 129, 0.3);
 }
-.btn-compare-year.year-both.active {
-  background: var(--brand-primary);
-  border-color: var(--brand-primary);
-  color: #fff;
-  box-shadow: 0 1px 4px rgba(3, 105, 161, 0.3);
-}
 
 .compare-hint {
   font-size: 0.7rem;
