@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
   <div class="app-shell">
@@ -459,6 +459,85 @@
               </div>
             </div>
 
+            <!-- กราฟระดับน้ำรายสถานีบนหน้าแรก พร้อมตัวเลือกสถานี Dropdown -->
+            <div class="overview-chart-card" id="overviewChartCard">
+              <div class="ov-chart-header">
+                <div class="ov-chart-title-area">
+                  <div class="ov-chart-title-lead">
+                    <div class="ov-chart-icon">
+                      <i data-lucide="line-chart"></i>
+                    </div>
+                    <div>
+                      <h3 class="ov-chart-heading">กราฟระดับน้ำรายสถานี</h3>
+                      <p class="ov-chart-sub">ติดตามแนวโน้มระดับน้ำย้อนหลังแบบ Real-time</p>
+                    </div>
+                  </div>
+
+                  <!-- เมนู Dropdown เลือกสถานี -->
+                  <div class="ov-station-select-wrap">
+                    <div class="select-wrapper ov-select-wrapper">
+                      <select id="overviewStationSelect" aria-label="เลือกสถานีเพื่อดูกราฟ">
+                        <option value="">กำลังโหลดรายชื่อสถานี...</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ป้ายสรุปค่าวัดสดของสถานีที่เลือก -->
+                <div class="ov-chart-quick-stats" id="ovChartQuickStats">
+                  <div class="ov-stat-item">
+                    <span class="ov-stat-label">ระดับน้ำปัจจุบัน:</span>
+                    <strong class="ov-stat-val text-cyan" id="ovStatWaterLevel">-</strong>
+                    <span class="ov-stat-unit">ม.รทก.</span>
+                  </div>
+                  <div class="ov-stat-divider" aria-hidden="true"></div>
+                  <div class="ov-stat-item">
+                    <span class="ov-stat-label">ระดับตลิ่ง:</span>
+                    <strong class="ov-stat-val" id="ovStatBankLevel">-</strong>
+                    <span class="ov-stat-unit">ม.รทก.</span>
+                  </div>
+                  <div class="ov-stat-divider" aria-hidden="true"></div>
+                  <div class="ov-stat-item">
+                    <span class="ov-stat-label">ระยะพ้นตลิ่ง:</span>
+                    <strong class="ov-stat-val" id="ovStatFreeboard">-</strong>
+                    <span class="ov-stat-unit">ม.</span>
+                    <span class="status-pill badge safe" id="ovStatStatusBadge">ปกติ</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- แถบควบคุม: ช่วงเวลา & เทียบปีน้ำท่วม -->
+              <div class="ov-chart-toolbar">
+                <div class="graph-toolbar-group range-group">
+                  <span class="toolbar-label"><i data-lucide="calendar" class="icon-xs"></i> ช่วงเวลา:</span>
+                  <div class="graph-range-picker" role="group" aria-label="เลือกช่วงเวลากราฟหน้าแรก">
+                    <button class="btn-range btn-ov-range" data-days="1" aria-pressed="false">24 ชม.</button>
+                    <button class="btn-range btn-ov-range active" data-days="7" aria-pressed="true">7 วัน</button>
+                    <button class="btn-range btn-ov-range" data-days="15" aria-pressed="false">15 วัน</button>
+                    <button class="btn-range btn-ov-range" data-days="30" aria-pressed="false">30 วัน</button>
+                  </div>
+                </div>
+
+                <div class="graph-toolbar-divider" aria-hidden="true"></div>
+
+                <div class="graph-toolbar-group compare-group" role="group" aria-label="เทียบปีน้ำท่วมใหญ่">
+                  <span class="toolbar-label compare-label"><i data-lucide="git-compare-arrows" class="icon-xs"></i> เทียบปีน้ำท่วม:</span>
+                  <button class="btn-compare-year btn-ov-compare year-2562" data-year="2019" aria-pressed="false">พ.ศ. 2562</button>
+                  <button class="btn-compare-year btn-ov-compare year-2565" data-year="2022" aria-pressed="false">พ.ศ. 2565</button>
+                  <span class="compare-hint hidden" id="ovCompareHint"></span>
+                </div>
+              </div>
+
+              <!-- Canvas Container -->
+              <div class="ov-canvas-wrapper">
+                <canvas id="overviewChartCanvas" role="img" aria-label="กราฟระดับน้ำรายสถานี"></canvas>
+                <div class="chart-loader hidden" id="ovChartLoader">
+                  <div class="spinner" aria-hidden="true"></div>
+                  <span>กำลังดึงข้อมูลกราฟจากฐานข้อมูล...</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Two-Column Layout (Desktop Split, Mobile Stack) -->
             <div class="overview-split-layout">
               <!-- คอลัมน์ซ้าย: สถานการณ์ระดับน้ำ -->
@@ -875,7 +954,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=22"></script>
+  <script src="app.js?v=23"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

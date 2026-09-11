@@ -1146,6 +1146,172 @@ body.view-overview-active #rainKpiGrid {
   opacity: 0.85;
 }
 
+/* 2.5 Overview Chart Card (กราฟระดับน้ำรายสถานีบนหน้าแรก พร้อม Dropdown) */
+.overview-chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border-1);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-1);
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.overview-chart-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #0ea5e9);
+}
+
+.ov-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ov-chart-title-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.ov-chart-title-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ov-chart-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(2, 132, 199, 0.1));
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--brand-primary);
+  font-size: 18px;
+}
+.ov-chart-icon svg { width: 20px; height: 20px; }
+
+.ov-chart-heading {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--text-1);
+  letter-spacing: -0.01em;
+}
+
+.ov-chart-sub {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+/* Station Select Dropdown in Overview Card */
+.ov-station-select-wrap {
+  min-width: 240px;
+}
+
+.ov-select-wrapper select {
+  width: 100%;
+  max-width: 340px;
+  padding: 8px 32px 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-2);
+  background-color: var(--bg-subtle);
+  color: var(--text-1);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.ov-select-wrapper select:hover {
+  border-color: var(--brand-bright);
+}
+.ov-select-wrapper select:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+/* Quick Stats Row in Card Header */
+.ov-chart-quick-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-1);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.ov-stat-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 0.76rem;
+}
+
+.ov-stat-label {
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.ov-stat-val {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.ov-stat-unit {
+  font-size: 0.68rem;
+  color: var(--text-3);
+}
+
+.ov-stat-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-2);
+  opacity: 0.5;
+}
+
+/* Toolbar in Overview Card */
+.ov-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-1);
+  flex-wrap: wrap;
+}
+
+/* Canvas Wrapper in Overview Card */
+.ov-canvas-wrapper {
+  position: relative;
+  height: 310px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-1);
+  background: var(--bg-card);
+}
+
 /* 3. Two-Column Split Layout */
 .overview-split-layout {
   display: grid;
@@ -2707,6 +2873,16 @@ body.view-overview-active #rainKpiGrid {
   .leaflet-control-zoom {
     display: none !important;
   }
+
+  /* Overview Chart Card บนมือถือ */
+  .ov-chart-header { flex-direction: column; align-items: stretch; gap: 10px; }
+  .ov-chart-title-area { flex-direction: column; align-items: stretch; gap: 8px; }
+  .ov-station-select-wrap { width: 100%; }
+  .ov-select-wrapper select { max-width: 100%; width: 100%; }
+  .ov-chart-quick-stats { width: 100%; justify-content: space-between; gap: 8px; padding: 8px 10px; }
+  .ov-canvas-wrapper { height: 260px; padding: 8px 10px; }
+  .ov-chart-toolbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ov-chart-toolbar .graph-toolbar-divider { display: none; }
 
   .modal-backdrop { padding: 10px; align-items: flex-end; }
   .modal-card { max-height: 92dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; }

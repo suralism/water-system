@@ -34,6 +34,12 @@ let currentModalStation = null;
 let chartRangeDays = 1;
 let currentModalTab = "graph"; // "graph" หรือ "crossSection"
 
+// Overview Dashboard Chart instance
+let overviewChart = null;
+let currentOverviewStationId = null;
+let overviewChartRangeDays = 7;
+let overviewCompareYears = [];
+
 // ปีน้ำท่วมใหญ่สำหรับเปรียบเทียบ (ค.ศ.) — พ.ศ. 2562 = 2019, พ.ศ. 2565 = 2022
 const FLOOD_YEARS = [2019, 2022];
 let compareYears = [];
@@ -329,6 +335,8 @@ async function loadAllData() {
 
     applyFilters();
     updateRiverCorridors();
+    populateOverviewStationSelect();
+    loadOverviewChart();
     remainingSeconds = REFRESH_INTERVAL_SEC;
 
     // ตรวจสอบสถานะวิกฤตและเล่นเสียงเตือนหากเปิดไว้
@@ -2239,6 +2247,10 @@ function applyTheme(theme, updateMap = true) {
       switchBaseLayer("voyager");
     }
   }
+
+  if (lastOverviewGraphResult && typeof renderOverviewChart === "function") {
+    renderOverviewChart(lastOverviewGraphResult, lastOverviewCompareResults);
+  }
 }
 
 /**
@@ -2595,6 +2607,317 @@ points.forEach((pt) => {
             label: function(context) {
               const val = context.parsed.y;
               if (val === null || val === undefined) return null; // ซ่อนบรรทัดที่ไม่มีข้อมูล
+              return `${context.dataset.label}: ${val.toFixed(2)} ม.รทก.`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: isDark ? "#64748b" : "#94a3b8", font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0, autoSkip: true }
+        },
+        y: {
+          grid: { color: isDark ? "rgba(51, 65, 85, 0.5)" : "rgba(226, 232, 240, 0.7)" },
+          border: { display: false },
+          ticks: { color: isDark ? "#64748b" : "#94a3b8", font: { family: "Sarabun, sans-serif", size: 10.5 }, maxTicksLimit: 6, padding: 6 },
+          title: {
+            display: true,
+            text: "หน่วย: ม.รทก.",
+            color: isDark ? "#475569" : "#94a3b8",
+            font: { family: "Sarabun, sans-serif", size: 10 },
+            padding: { bottom: 4 }
+          }
+        }
+      }
+    }
+  });
+}
+
+/**
+ * 15.1 ฟังก์ชันสำหรับกราฟระดับน้ำบนหน้าแรก (Overview Dashboard Chart)
+ */
+let lastOverviewGraphResult = null;
+let lastOverviewCompareResults = [];
+
+function populateOverviewStationSelect() {
+  const select = document.getElementById("overviewStationSelect");
+  if (!select || allWaterLevels.length === 0) return;
+
+  // เรียงลำดับ: สถานี M.7 (สะพานเสรีประชาธิปไตย) ขึ้นอันดับแรกเสมอ
+  const sorted = [...allWaterLevels].sort((a, b) => {
+    const aIsM7 = (a.station.nameTh && a.station.nameTh.includes("M.7")) || a.station.id === 3543;
+    const bIsM7 = (b.station.nameTh && b.station.nameTh.includes("M.7")) || b.station.id === 3543;
+    if (aIsM7 && !bIsM7) return -1;
+    if (!aIsM7 && bIsM7) return 1;
+    return (a.station.nameTh || "").localeCompare(b.station.nameTh || "", "th");
+  });
+
+  const prevSelected = select.value;
+  select.innerHTML = sorted.map((item) => {
+    const st = item.station;
+    const isM7 = (st.nameTh && st.nameTh.includes("M.7")) || st.id === 3543;
+    const code = isM7 ? "⭐ M.7 - " : (st.oldcode ? `${st.oldcode} - ` : "");
+    const name = st.nameTh || `สถานี ${st.id}`;
+    const amphoe = st.amphoeNameTh ? ` (อ.${st.amphoeNameTh})` : "";
+    return `<option value="${st.id}">${code}${name}${amphoe}</option>`;
+  }).join("");
+
+  if (!currentOverviewStationId) {
+    const m7 = sorted.find((s) => (s.station.nameTh && s.station.nameTh.includes("M.7")) || s.station.id === 3543);
+    currentOverviewStationId = m7 ? m7.station.id : sorted[0].station.id;
+  } else if (prevSelected) {
+    currentOverviewStationId = Number(prevSelected);
+  }
+
+  select.value = String(currentOverviewStationId);
+}
+
+async function loadOverviewChart() {
+  if (!currentOverviewStationId) {
+    populateOverviewStationSelect();
+  }
+  if (!currentOverviewStationId) return;
+
+  const loader = document.getElementById("ovChartLoader");
+  if (loader) loader.classList.remove("hidden");
+
+  // อัปเดตค่าวัดสดของสถานีในส่วนหัวการ์ด
+  const stWater = allWaterLevels.find((w) => w.station.id === currentOverviewStationId);
+  if (stWater) {
+    const waterVal = document.getElementById("ovStatWaterLevel");
+    const bankVal = document.getElementById("ovStatBankLevel");
+    const fbVal = document.getElementById("ovStatFreeboard");
+    const badge = document.getElementById("ovStatStatusBadge");
+
+    if (waterVal) waterVal.textContent = stWater.waterlevelMsl !== null ? stWater.waterlevelMsl.toFixed(2) : "-";
+    if (bankVal) bankVal.textContent = stWater.minBankMsl !== null ? stWater.minBankMsl.toFixed(2) : "-";
+    if (fbVal) {
+      const fbObj = formatFreeboard(stWater.freeboardM, { withSign: true, returnObject: true });
+      fbVal.textContent = fbObj.num;
+      fbVal.className = `ov-stat-val ${stWater.freeboardM < 0 ? 'text-danger' : stWater.freeboardM <= 0.5 ? 'text-warning' : 'text-cyan'}`;
+    }
+    if (badge) {
+      const isOver = stWater.freeboardM !== null && stWater.freeboardM < 0;
+      const isWarn = stWater.freeboardM !== null && stWater.freeboardM <= 0.5;
+      badge.textContent = isOver ? "🚨 ล้นตลิ่ง" : isWarn ? "⚠️ เฝ้าระวัง" : "✅ ปกติ";
+      badge.className = `status-pill badge ${isOver ? 'danger' : isWarn ? 'warning' : 'safe'}`;
+    }
+  }
+
+  try {
+    const today = new Date();
+    const startDateObj = new Date(today.getTime() - overviewChartRangeDays * 24 * 60 * 60 * 1000);
+    const pad = (n) => String(n).padStart(2, "0");
+    const fmtDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const fmtDateTime = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    const startDate = fmtDate(startDateObj);
+    const endDate = fmtDateTime(today);
+
+    const res = await fetch(`/api/water-levels/graph?station_id=${currentOverviewStationId}&start_date=${startDate}&end_date=${encodeURIComponent(endDate)}`);
+    const json = await res.json();
+
+    if (json.success && json.data) {
+      let compareResults = [];
+      if (overviewCompareYears.length > 0) {
+        compareResults = await Promise.all(
+          overviewCompareYears.map(async (year) => {
+            try {
+              const yStart = `${year}-${startDate.slice(5)}`;
+              const yEnd = `${year}-${endDate.slice(5, 10)} ${endDate.slice(11)}`;
+              const yRes = await fetch(`/api/water-levels/graph?station_id=${currentOverviewStationId}&start_date=${yStart}&end_date=${encodeURIComponent(yEnd)}`);
+              const yJson = await yRes.json();
+              return { year, data: yJson.success ? yJson.data : null };
+            } catch {
+              return { year, data: null };
+            }
+          })
+        );
+      }
+      lastOverviewGraphResult = json.data;
+      lastOverviewCompareResults = compareResults;
+      renderOverviewChart(json.data, compareResults);
+    }
+  } catch (err) {
+    console.error("Error loading overview chart:", err);
+  } finally {
+    if (loader) loader.classList.add("hidden");
+  }
+}
+
+function renderOverviewChart(graphResult, compareResults = []) {
+  const canvas = document.getElementById("overviewChartCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (overviewChart) overviewChart.destroy();
+
+  const points = graphResult.points || [];
+  const labels = [];
+  const tooltipTitles = [];
+  const waterLevelValues = [];
+  const minBankValues = [];
+  const warningValues = [];
+
+  const stWater = allWaterLevels.find((w) => w.station.id === currentOverviewStationId);
+  const minBank = graphResult.minBankMsl ?? stWater?.minBankMsl;
+  const warningLevel = graphResult.warningLevelMsl;
+
+  const thaiMonthsShort = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  function thaiFullDate(d) {
+    return `${d.getDate()} ${thaiMonthsShort[d.getMonth()]} ${d.getFullYear() + 543} • ${padZero(d.getHours())}:${padZero(d.getMinutes())} น.`;
+  }
+
+  points.forEach((pt) => {
+    const d = pt.observedAt ? new Date(pt.observedAt) : (pt.rawDatetime ? new Date(pt.rawDatetime.replace(" ", "T") + "+07:00") : null);
+    const labelStr = d ? `${padZero(d.getHours())}:${padZero(d.getMinutes())} (${d.getDate()}/${d.getMonth()+1})` : pt.rawDatetime;
+
+    labels.push(labelStr);
+    tooltipTitles.push(d ? thaiFullDate(d) : (pt.rawDatetime ?? ""));
+    waterLevelValues.push(pt.waterlevelMsl);
+
+    if (minBank !== null && minBank !== undefined) {
+      minBankValues.push(minBank);
+    }
+    if (warningLevel !== null && warningLevel !== undefined) {
+      warningValues.push(warningLevel);
+    }
+  });
+
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const mainColor = isDark ? "#38bdf8" : "#0284c7";
+  const chartHeight = canvas.parentElement?.clientHeight ?? 300;
+  const areaGradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
+  areaGradient.addColorStop(0, isDark ? "rgba(56, 189, 248, 0.28)" : "rgba(2, 132, 199, 0.20)");
+  areaGradient.addColorStop(1, "rgba(2, 132, 199, 0)");
+
+  const lineBase = {
+    fill: false,
+    tension: 0.35,
+    spanGaps: true,
+    pointRadius: 0,
+    pointHitRadius: 12,
+    pointHoverRadius: 5,
+  };
+
+  const datasets = [
+    {
+      ...lineBase,
+      label: "ระดับน้ำปัจจุบัน",
+      data: waterLevelValues,
+      borderColor: mainColor,
+      backgroundColor: areaGradient,
+      fill: true,
+      borderWidth: 2.5,
+      pointBackgroundColor: mainColor,
+    }
+  ];
+
+  if (minBankValues.length > 0) {
+    datasets.push({
+      ...lineBase,
+      label: `ระดับตลิ่ง ${Number(minBank).toFixed(2)} ม.`,
+      data: minBankValues,
+      borderColor: isDark ? "#f87171" : "#ef4444",
+      borderDash: [7, 5],
+      borderWidth: 1.8,
+    });
+  }
+
+  if (warningValues.length > 0 && warningLevel !== minBank) {
+    datasets.push({
+      ...lineBase,
+      label: `ระดับเตือนภัย ${Number(warningLevel).toFixed(2)} ม.`,
+      data: warningValues,
+      borderColor: isDark ? "#fbbf24" : "#d97706",
+      borderDash: [4, 4],
+      borderWidth: 1.4,
+    });
+  }
+
+  // เส้นเปรียบเทียบปีน้ำท่วมใหญ่
+  const compareStyles = {
+    2019: { be: 2562, color: isDark ? "#a78bfa" : "#7c3aed" },
+    2022: { be: 2565, color: isDark ? "#34d399" : "#059669" },
+  };
+  const missingYears = [];
+
+  for (const cmp of compareResults) {
+    const style = compareStyles[cmp.year];
+    if (!style || !cmp.data || !cmp.data.points || cmp.data.points.length === 0) {
+      if (style) missingYears.push(style.be);
+      continue;
+    }
+    const cmpMap = new Map();
+    cmp.data.points.forEach((pt) => {
+      const k = thaiLocalHourKey(pt.observedAt || pt.rawDatetime);
+      if (k && pt.waterlevelMsl !== null) cmpMap.set(k, pt.waterlevelMsl);
+    });
+
+    if (cmpMap.size === 0) {
+      missingYears.push(style.be);
+      continue;
+    }
+    datasets.push({
+      ...lineBase,
+      label: `พ.ศ. ${style.be} (ปีน้ำท่วม)`,
+      data: points.map((pt) => cmpMap.get(thaiLocalHourKey(pt.observedAt)) ?? null),
+      borderColor: style.color,
+      borderDash: [5, 3],
+      borderWidth: 1.6,
+    });
+  }
+
+  const hintEl = document.getElementById("ovCompareHint");
+  if (hintEl) {
+    if (missingYears.length > 0) {
+      hintEl.textContent = `⚠️ สถานีนี้ไม่มีข้อมูลปี ${missingYears.map((y) => `พ.ศ. ${y}`).join(", ")}`;
+      hintEl.classList.remove("hidden");
+    } else {
+      hintEl.classList.add("hidden");
+    }
+  }
+
+  overviewChart = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      layout: { padding: { top: 4 } },
+      animation: { duration: 400, easing: "easeOutQuart" },
+      plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            pointStyle: "line",
+            boxWidth: 24,
+            boxHeight: 8,
+            padding: 12,
+            color: isDark ? "#94a3b8" : "#64748b",
+            font: { family: "Sarabun, sans-serif", size: 11.5, weight: 600 }
+          }
+        },
+        tooltip: {
+          backgroundColor: isDark ? "rgba(10, 15, 30, 0.96)" : "rgba(15, 23, 42, 0.94)",
+          titleColor: "#f8fafc",
+          bodyColor: "#e2e8f0",
+          padding: 12,
+          cornerRadius: 10,
+          boxPadding: 6,
+          usePointStyle: true,
+          displayColors: true,
+          titleMarginBottom: 8,
+          titleFont: { family: "Sarabun, sans-serif", size: 12, weight: 700 },
+          bodyFont: { family: "Sarabun, sans-serif", size: 11.5 },
+          callbacks: {
+            title: (items) => tooltipTitles[items[0].dataIndex] ?? items[0].label,
+            label: function(context) {
+              const val = context.parsed.y;
+              if (val === null || val === undefined) return null;
               return `${context.dataset.label}: ${val.toFixed(2)} ม.รทก.`;
             }
           }
@@ -3099,10 +3422,10 @@ function setupEventListeners() {
     startCrossSectionSimulation();
   });
 
-  // Chart Range Buttons
-  document.querySelectorAll(".btn-range").forEach((btn) => {
+  // Modal Chart Range Buttons
+  document.querySelectorAll("#modalGraphSection .btn-range").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".btn-range").forEach((b) => {
+      document.querySelectorAll("#modalGraphSection .btn-range").forEach((b) => {
         b.classList.remove("active");
         b.setAttribute("aria-pressed", "false");
       });
@@ -3113,8 +3436,8 @@ function setupEventListeners() {
     });
   });
 
-  // Flood Year Comparison Buttons (พ.ศ. 2562 / 2565)
-  document.querySelectorAll(".btn-compare-year").forEach((btn) => {
+  // Modal Flood Year Comparison Buttons (พ.ศ. 2562 / 2565)
+  document.querySelectorAll("#modalGraphSection .btn-compare-year").forEach((btn) => {
     btn.addEventListener("click", () => {
       const y = Number(btn.dataset.year);
       if (isNaN(y)) return;
@@ -3124,6 +3447,38 @@ function setupEventListeners() {
       btn.classList.toggle("active", compareYears.includes(y));
       btn.setAttribute("aria-pressed", String(compareYears.includes(y)));
       loadStationGraph();
+    });
+  });
+
+  // Overview Page Chart Controls
+  document.getElementById("overviewStationSelect")?.addEventListener("change", (e) => {
+    currentOverviewStationId = Number(e.target.value);
+    loadOverviewChart();
+  });
+
+  document.querySelectorAll(".btn-ov-range").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".btn-ov-range").forEach((b) => {
+        b.classList.remove("active");
+        b.setAttribute("aria-pressed", "false");
+      });
+      btn.classList.add("active");
+      btn.setAttribute("aria-pressed", "true");
+      overviewChartRangeDays = Number(btn.dataset.days);
+      loadOverviewChart();
+    });
+  });
+
+  document.querySelectorAll(".btn-ov-compare").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const y = Number(btn.dataset.year);
+      if (isNaN(y)) return;
+      overviewCompareYears = overviewCompareYears.includes(y)
+        ? overviewCompareYears.filter((v) => v !== y)
+        : [...overviewCompareYears, y].sort();
+      btn.classList.toggle("active", overviewCompareYears.includes(y));
+      btn.setAttribute("aria-pressed", String(overviewCompareYears.includes(y)));
+      loadOverviewChart();
     });
   });
 
