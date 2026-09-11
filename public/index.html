@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <div class="app-shell">
@@ -68,7 +68,10 @@
       <div class="sidebar-section">
         <p class="sidebar-heading">มุมมอง</p>
         <nav class="sidebar-nav" aria-label="สลับมุมมอง">
-          <button id="btnViewMap" class="side-nav-btn active" aria-pressed="true">
+          <button id="btnViewOverview" class="side-nav-btn active" aria-pressed="true">
+            <i data-lucide="layout-dashboard" class="icon-sm"></i> <span>ภาพรวม</span>
+          </button>
+          <button id="btnViewMap" class="side-nav-btn" aria-pressed="false">
             <i data-lucide="map" class="icon-sm"></i> <span>แผนที่</span>
           </button>
           <button id="btnViewTable" class="side-nav-btn" aria-pressed="false">
@@ -178,6 +181,19 @@
           <div class="gps-results-grid" id="gpsResultsGrid">
             <!-- Populated dynamically by JS -->
           </div>
+        </div>
+
+        <!-- แถบสลับมุมมองด่วนบนมือถือ (Mobile View Tabs) -->
+        <div class="mobile-view-tabs" role="tablist" aria-label="สลับมุมมองข้อมูล">
+          <button class="m-view-tab active" data-view="overview" role="tab" aria-selected="true">
+            <i data-lucide="layout-dashboard" class="icon-xs"></i> <span>ภาพรวม</span>
+          </button>
+          <button class="m-view-tab" data-view="map" role="tab" aria-selected="false">
+            <i data-lucide="map" class="icon-xs"></i> <span>แผนที่</span>
+          </button>
+          <button class="m-view-tab" data-view="table" role="tab" aria-selected="false">
+            <i data-lucide="table" class="icon-xs"></i> <span>ตาราง</span>
+          </button>
         </div>
 
         <!-- ========== KPI CARDS (สลับตามโหมด) ========== -->
@@ -361,11 +377,171 @@
           </div>
         </section>
 
-        <!-- ========== MAP / TABLE VIEW ========== -->
+        <!-- ========== VIEW PANELS ========== -->
         <section class="content-body">
 
-          <!-- MAP VIEW -->
-          <div id="mapViewContainer" class="view-panel active">
+          <!-- 1. OVERVIEW VIEW PANEL (หน้าภาพรวมสรุปสถานการณ์ - ค่าเริ่มต้น) -->
+          <div id="overviewViewContainer" class="view-panel active">
+            <!-- Executive Summary Banner -->
+            <div class="exec-summary-banner">
+              <div class="exec-summary-left">
+                <div class="exec-status-header">
+                  <span class="status-dot pulsing normal" id="execStatusDot"></span>
+                  <strong class="exec-status-title" id="execStatusTitle">สรุปสถานการณ์ภาพรวม จ.อุบลราชธานี</strong>
+                </div>
+                <p class="exec-summary-text" id="execSummaryText">กำลังประมวลผลข้อมูลล่าสุดจากสถานีตรวจวัด...</p>
+              </div>
+              <div class="exec-summary-right">
+                <span class="exec-time-tag" id="execTimeBadge"><i data-lucide="clock" class="icon-xs"></i> ข้อมูลสด</span>
+              </div>
+            </div>
+
+            <!-- Unified Combined KPI Bar (5 Metrics) -->
+            <div class="overview-kpi-grid">
+              <div class="ov-kpi-card danger">
+                <div class="ov-kpi-head">
+                  <span class="ov-kpi-title">น้ำล้นตลิ่ง</span>
+                  <span class="ov-kpi-badge danger">วิกฤต</span>
+                </div>
+                <div class="ov-kpi-body">
+                  <span class="ov-kpi-num" id="ovKpiOverflow">0</span>
+                  <span class="ov-kpi-unit">สถานี</span>
+                </div>
+                <span class="ov-kpi-hint">ล้นขอบตลิ่งเข้าท่วม</span>
+              </div>
+
+              <div class="ov-kpi-card warning">
+                <div class="ov-kpi-head">
+                  <span class="ov-kpi-title">เฝ้าระวังตลิ่ง</span>
+                  <span class="ov-kpi-badge warning">ปริ่มน้ำ</span>
+                </div>
+                <div class="ov-kpi-body">
+                  <span class="ov-kpi-num" id="ovKpiWarning">0</span>
+                  <span class="ov-kpi-unit">สถานี</span>
+                </div>
+                <span class="ov-kpi-hint">เหลือต่ำกว่าตลิ่ง ≤ 50 ซม.</span>
+              </div>
+
+              <div class="ov-kpi-card normal">
+                <div class="ov-kpi-head">
+                  <span class="ov-kpi-title">ระดับน้ำปกติ</span>
+                  <span class="ov-kpi-badge normal">ปลอดภัย</span>
+                </div>
+                <div class="ov-kpi-body">
+                  <span class="ov-kpi-num" id="ovKpiNormal">0</span>
+                  <span class="ov-kpi-unit">สถานี</span>
+                </div>
+                <span class="ov-kpi-hint">ระดับน้ำยังอยู่ในตลิ่ง</span>
+              </div>
+
+              <div class="ov-kpi-card rain-peak">
+                <div class="ov-kpi-head">
+                  <span class="ov-kpi-title">ฝนสูงสุด 24 ชม.</span>
+                  <span class="ov-kpi-badge rain">สูงสุด</span>
+                </div>
+                <div class="ov-kpi-body">
+                  <span class="ov-kpi-num" id="ovKpiMaxRainVal">0.0</span>
+                  <span class="ov-kpi-unit">มม.</span>
+                </div>
+                <span class="ov-kpi-hint text-truncate" id="ovKpiMaxRainStation">-</span>
+              </div>
+
+              <div class="ov-kpi-card rain-active">
+                <div class="ov-kpi-head">
+                  <span class="ov-kpi-title">จุดตรวจที่มีฝน</span>
+                  <span class="ov-kpi-badge active-rain">24 ชม.</span>
+                </div>
+                <div class="ov-kpi-body">
+                  <span class="ov-kpi-num" id="ovKpiActiveRain">0</span>
+                  <span class="ov-kpi-unit">สถานี</span>
+                </div>
+                <span class="ov-kpi-hint" id="ovKpiTotalRain">จากทั้งหมด 48 สถานี</span>
+              </div>
+            </div>
+
+            <!-- Two-Column Layout (Desktop Split, Mobile Stack) -->
+            <div class="overview-split-layout">
+              <!-- คอลัมน์ซ้าย: สถานการณ์ระดับน้ำ -->
+              <div class="overview-col-left">
+                <!-- Watchlist Card -->
+                <div class="overview-panel-card">
+                  <div class="panel-card-header">
+                    <div class="panel-card-title">
+                      <i data-lucide="alert-octagon" class="icon-sm text-danger"></i>
+                      <h3>สถานีเฝ้าระวัง &amp; น้ำล้นตลิ่ง</h3>
+                    </div>
+                    <span id="ovWaterSideBadge" class="badge danger">0 สถานี</span>
+                  </div>
+                  <div class="leaderboard-list" id="ovWaterLeaderList">
+                    <div class="loading-placeholder">กำลังโหลด...</div>
+                  </div>
+                </div>
+
+                <!-- 5 แม่น้ำสายหลัก Card -->
+                <div class="overview-panel-card" id="riverCorridorSection" aria-label="สถานการณ์ 5 แม่น้ำสายหลัก">
+                  <div class="panel-card-header">
+                    <div class="panel-card-title">
+                      <i data-lucide="route" class="icon-sm text-cyan"></i>
+                      <h3>สถานการณ์ 5 แม่น้ำสายหลัก จ.อุบลราชธานี</h3>
+                    </div>
+                    <span class="rc-live-tag"><span class="rc-dot"></span> สด</span>
+                  </div>
+                  <div class="river-corridor-cards" id="riverCorridorCards">
+                    <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับน้ำใน 5 ลำน้ำหลัก...</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- คอลัมน์ขวา: สถานการณ์น้ำฝน & ทางลัด -->
+              <div class="overview-col-right">
+                <!-- Top 10 Rain Card -->
+                <div class="overview-panel-card">
+                  <div class="panel-card-header rain-header">
+                    <div class="panel-card-title">
+                      <i data-lucide="cloud-rain" class="icon-sm text-blue"></i>
+                      <h3>10 อันดับสถานีฝนสะสมสูงสุด 24 ชม.</h3>
+                    </div>
+                    <span class="badge rain" id="ovRainSideBadge">Top 10</span>
+                  </div>
+                  <div class="leaderboard-list" id="ovRainLeaderList">
+                    <div class="loading-placeholder">กำลังโหลด...</div>
+                  </div>
+                </div>
+
+                <!-- Quick Action CTA Cards -->
+                <div class="overview-cta-box">
+                  <div class="cta-card cta-map" id="ctaOpenMap" role="button" tabindex="0" aria-label="เปิดดูแผนที่สถานี">
+                    <div class="cta-icon-wrap">
+                      <i data-lucide="map" class="icon-md"></i>
+                    </div>
+                    <div class="cta-info">
+                      <h4>แผนที่พิกัดสถานี &amp; เรดาร์ฝนสด</h4>
+                      <p>ดูตำแหน่งพิกัดสถานีทั้งหมด 67 จุด และภาพเรดาร์กลุ่มฝนสด</p>
+                    </div>
+                    <span class="btn-cta">
+                      <span>เปิดแผนที่</span> <i data-lucide="chevron-right" class="icon-xs"></i>
+                    </span>
+                  </div>
+
+                  <div class="cta-card cta-table" id="ctaOpenTable" role="button" tabindex="0" aria-label="เปิดดูตารางข้อมูล">
+                    <div class="cta-icon-wrap table-icon">
+                      <i data-lucide="table" class="icon-md"></i>
+                    </div>
+                    <div class="cta-info">
+                      <h4>ตารางข้อมูลระดับน้ำและฝนละเอียด</h4>
+                      <p>ดูตารางระดับน้ำรายสถานี ลุ่มน้ำ ปริมาณฝน 1 ชม. / 24 ชม. และค้นหาตามอำเภอ</p>
+                    </div>
+                    <span class="btn-cta secondary">
+                      <span>ดูตาราง</span> <i data-lucide="chevron-right" class="icon-xs"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. MAP VIEW -->
+          <div id="mapViewContainer" class="view-panel">
             <div class="map-layout">
               <!-- Map -->
               <div class="map-wrapper">
@@ -516,21 +692,6 @@
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <!-- ========== MAIN RIVERS CORRIDOR (5 ลำน้ำสายหลักเมืองอุบลฯ) ========== -->
-        <section class="river-corridor-section" id="riverCorridorSection" aria-label="สถานการณ์ 5 ลำน้ำสายหลัก">
-          <div class="river-corridor-header">
-            <div class="rc-title-wrap">
-              <span class="rc-live-tag"><span class="rc-dot" aria-hidden="true"></span> จุดตรวจวัดสด</span>
-              <h3>สถานการณ์ 5 ลำน้ำสายหลัก จ.อุบลราชธานี</h3>
-            </div>
-            <span class="rc-hint">คลิกเพื่อดูตำแหน่งบนแผนที่</span>
-          </div>
-          <div class="river-corridor-cards" id="riverCorridorCards">
-            <!-- Populated by JavaScript with real station data -->
-            <div class="rc-loading-placeholder">กำลังโหลดข้อมูลระดับน้ำใน 5 ลำน้ำหลัก...</div>
           </div>
         </section>
 
@@ -714,7 +875,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=21"></script>
+  <script src="app.js?v=22"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

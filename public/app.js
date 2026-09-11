@@ -14,7 +14,7 @@ let filteredRainfalls = [];
 
 // Modes & Filters
 let currentMode = "water"; // "water" (สถานีระดับน้ำ) หรือ "rain" (สถานีวัดน้ำฝน)
-let currentView = "map";   // "map" หรือ "table"
+let currentView = "overview"; // "overview" (ภาพรวม) | "map" (แผนที่) | "table" (ตาราง)
 let currentAmphoe = "";    // กรองตามอำเภอใน จ.อุบลฯ
 let currentSearchQuery = "";
 
@@ -154,6 +154,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadMapKey();
   initMap();
   setupEventListeners();
+  switchView("overview");
   loadAllData();
   startCountdownTimer();
 });
@@ -166,6 +167,7 @@ function initMap() {
     center: UBON_COORDS,
     zoom: 9.5,
     zoomControl: false,
+    scrollWheelZoom: false, // ป้องกันการเลื่อนลูกกลิ้งเมาส์แล้วแผนที่ดักจับการเลื่อนจอ
   });
 
   // ตัดคำว่า "Leaflet |" ออกอย่างสมบูรณ์
@@ -456,7 +458,13 @@ function updateKPIs() {
   animateNumber("waterKpiWarning", waterWarning);
   animateNumber("waterKpiNormal", waterNormal);
   animateNumber("waterKpiTotal", filteredWaterLevels.length);
-  document.getElementById("waterKpiProvinceLabel").textContent = `ใน ${amphoeLabel}`;
+  const provLabel = document.getElementById("waterKpiProvinceLabel");
+  if (provLabel) provLabel.textContent = `ใน ${amphoeLabel}`;
+
+  // Overview Dashboard Unified Metrics
+  animateNumber("ovKpiOverflow", waterOverflow);
+  animateNumber("ovKpiWarning", waterWarning);
+  animateNumber("ovKpiNormal", waterNormal);
 
   // 5.2 Rainfall KPIs
   let rainVeryHeavy = 0;
@@ -476,18 +484,50 @@ function updateKPIs() {
   animateNumber("rainKpiVeryHeavy", rainVeryHeavy);
   animateNumber("rainKpiHeavy", rainHeavy);
   animateNumber("rainKpiTotal", filteredRainfalls.length);
-  document.getElementById("rainKpiActiveCount").textContent = `มีฝนตก ${rainActiveCount.toLocaleString()} สถานี (${amphoeLabel})`;
+  const rainActiveLabel = document.getElementById("rainKpiActiveCount");
+  if (rainActiveLabel) rainActiveLabel.textContent = `มีฝนตก ${rainActiveCount.toLocaleString()} สถานี (${amphoeLabel})`;
 
-  if (maxRain) {
-    document.getElementById("rainKpiMaxVal").textContent = Number(maxRain.rain24h).toFixed(1);
-    document.getElementById("rainKpiMaxStation").textContent = `${maxRain.station.nameTh ?? ""} (${maxRain.station.amphoeNameTh ? 'อ.' + maxRain.station.amphoeNameTh : ''})`;
-  } else {
-    document.getElementById("rainKpiMaxVal").textContent = "0.0";
-    document.getElementById("rainKpiMaxStation").textContent = "ไม่มีฝนตก";
-  }
+  // Overview Dashboard Rain Metrics
+  animateNumber("ovKpiActiveRain", rainActiveCount);
+  const ovTotalRainEl = document.getElementById("ovKpiTotalRain");
+  if (ovTotalRainEl) ovTotalRainEl.textContent = `จากทั้งหมด ${filteredRainfalls.length} สถานี (${amphoeLabel})`;
+
+  const maxRainValStr = maxRain ? Number(maxRain.rain24h).toFixed(1) : "0.0";
+  const maxRainStationStr = maxRain
+    ? `${maxRain.station.nameTh ?? ""} (${maxRain.station.amphoeNameTh ? 'อ.' + maxRain.station.amphoeNameTh : ''})`
+    : "ไม่มีฝนตก";
+
+  const rainMaxValEl = document.getElementById("rainKpiMaxVal");
+  if (rainMaxValEl) rainMaxValEl.textContent = maxRainValStr;
+  const rainMaxStEl = document.getElementById("rainKpiMaxStation");
+  if (rainMaxStEl) rainMaxStEl.textContent = maxRainStationStr;
+
+  const ovMaxRainValEl = document.getElementById("ovKpiMaxRainVal");
+  if (ovMaxRainValEl) ovMaxRainValEl.textContent = maxRainValStr;
+  const ovMaxRainStEl = document.getElementById("ovKpiMaxRainStation");
+  if (ovMaxRainStEl) ovMaxRainStEl.textContent = maxRainStationStr;
 
   const nowStr = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
   document.getElementById("cacheStatusText").textContent = `ข้อมูลสด (${nowStr} น.)`;
+
+  const execTimeBadge = document.getElementById("execTimeBadge");
+  if (execTimeBadge) execTimeBadge.innerHTML = `<i data-lucide="clock" class="icon-xs"></i> ข้อมูลสด ${nowStr} น.`;
+
+  // Executive Summary Banner Narrative
+  const execSummary = document.getElementById("execSummaryText");
+  const execDot = document.getElementById("execStatusDot");
+  if (execSummary) {
+    if (waterOverflow > 0) {
+      execSummary.textContent = `🚨 พบน้ำล้นตลิ่ง ${waterOverflow} สถานี และเฝ้าระวัง ${waterWarning} สถานี • ฝนตกสูงสุด 24 ชม. อยู่ที่ ${maxRain ? maxRain.station.nameTh : "-"} (${maxRainValStr} มม.) • แนะนำเฝ้าระวังสถานการณ์ใกล้ชิด`;
+      if (execDot) execDot.className = "status-dot pulsing danger";
+    } else if (waterWarning > 0) {
+      execSummary.textContent = `⚠️ ระดับน้ำส่วนใหญ่ปกติ แต่มีสถานีเฝ้าระวังใกล้ตลิ่ง ${waterWarning} สถานี (ยังไม่มีน้ำล้นตลิ่ง) • ฝนสะสมสูงสุด 24 ชม. ${maxRainValStr} มม. (${maxRain ? maxRain.station.nameTh : '-'})`;
+      if (execDot) execDot.className = "status-dot pulsing warning";
+    } else {
+      execSummary.textContent = `🟢 ระดับน้ำใน จ.อุบลราชธานี อยู่ในเกณฑ์ปกติครบทุกสถานี (${waterNormal} สถานี) • พบฝนตก ${rainActiveCount} จุดตรวจวัดทั่วจังหวัด`;
+      if (execDot) execDot.className = "status-dot pulsing normal";
+    }
+  }
 
   // Alert Banner
   const banner = document.getElementById("dangerAlertBanner");
@@ -670,10 +710,18 @@ function updateLeaderboards() {
 
   const totalRisky = overflowList.length + warningList.length;
   const badgeEl = document.getElementById("waterSideBadge");
-  badgeEl.textContent = totalRisky > 0 ? `${totalRisky} สถานี` : "ปกติ";
-  badgeEl.className = totalRisky > 0 ? "badge danger" : "badge normal";
+  if (badgeEl) {
+    badgeEl.textContent = totalRisky > 0 ? `${totalRisky} สถานี` : "ปกติ";
+    badgeEl.className = totalRisky > 0 ? "badge danger" : "badge normal";
+  }
+  const ovBadgeEl = document.getElementById("ovWaterSideBadge");
+  if (ovBadgeEl) {
+    ovBadgeEl.textContent = totalRisky > 0 ? `${totalRisky} สถานี` : "ปกติ";
+    ovBadgeEl.className = totalRisky > 0 ? "badge danger" : "badge normal";
+  }
 
   const waterContainer = document.getElementById("waterLeaderList");
+  const ovWaterContainer = document.getElementById("ovWaterLeaderList");
 
   function renderSidebarCard(item, type) {
     const isOverflow = type === "overflow";
@@ -761,7 +809,8 @@ function updateLeaderboards() {
     }).join("");
   }
 
-  waterContainer.innerHTML = html;
+  if (waterContainer) waterContainer.innerHTML = html;
+  if (ovWaterContainer) ovWaterContainer.innerHTML = html;
 
   // Rainfall Leaderboard
   const rainList = [...filteredRainfalls]
@@ -769,11 +818,9 @@ function updateLeaderboards() {
     .sort((a, b) => (b.rain24h ?? 0) - (a.rain24h ?? 0))
     .slice(0, 15);
 
-  const rainContainer = document.getElementById("rainLeaderList");
-  if (rainList.length === 0) {
-    rainContainer.innerHTML = `<div class="p-3 text-center text-muted" style="font-size:0.8rem;">ไม่มีฝนตกในพื้นที่นี้</div>`;
-  } else {
-    rainContainer.innerHTML = rainList.map((item) => {
+  const rainHtml = rainList.length === 0
+    ? `<div class="p-3 text-center text-muted" style="font-size:0.8rem;">ไม่มีฝนตกในพื้นที่นี้</div>`
+    : rainList.map((item) => {
       return `
         <div class="leader-item" onclick="focusStationOnMap(${item.station.id})">
           <div class="leader-meta">
@@ -787,7 +834,14 @@ function updateLeaderboards() {
         </div>
       `;
     }).join("");
-  }
+
+  const rainContainer = document.getElementById("rainLeaderList");
+  const ovRainContainer = document.getElementById("ovRainLeaderList");
+  if (rainContainer) rainContainer.innerHTML = rainHtml;
+  if (ovRainContainer) ovRainContainer.innerHTML = rainHtml;
+
+  const ovRainBadge = document.getElementById("ovRainSideBadge");
+  if (ovRainBadge) ovRainBadge.textContent = rainList.length > 0 ? `มีฝน ${rainList.length} จุด` : "ไม่มีฝน";
 
   if (typeof lucide !== "undefined") lucide.createIcons();
 }
@@ -2691,7 +2745,65 @@ function updatePaginationControls(total, maxPage) {
 }
 
 /**
- * 17. โฟกัสและซูมไปยังสถานีบนแผนที่
+ * 17. สลับมุมมองหน้าเว็บ: "overview" (ภาพรวม) | "map" (แผนที่) | "table" (ตารางข้อมูล)
+ */
+function switchView(viewName) {
+  currentView = viewName;
+
+  // 1. Sidebar Buttons
+  const btnOverview = document.getElementById("btnViewOverview");
+  const btnMap = document.getElementById("btnViewMap");
+  const btnTable = document.getElementById("btnViewTable");
+
+  if (btnOverview) {
+    btnOverview.classList.toggle("active", viewName === "overview");
+    btnOverview.setAttribute("aria-pressed", String(viewName === "overview"));
+  }
+  if (btnMap) {
+    btnMap.classList.toggle("active", viewName === "map");
+    btnMap.setAttribute("aria-pressed", String(viewName === "map"));
+  }
+  if (btnTable) {
+    btnTable.classList.toggle("active", viewName === "table");
+    btnTable.setAttribute("aria-pressed", String(viewName === "table"));
+  }
+
+  // 2. Mobile Tabs
+  document.querySelectorAll(".m-view-tab").forEach((tab) => {
+    const isActive = tab.dataset.view === viewName;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+
+  // 3. View Panels
+  const overviewPanel = document.getElementById("overviewViewContainer");
+  const mapPanel = document.getElementById("mapViewContainer");
+  const tablePanel = document.getElementById("tableViewContainer");
+
+  if (overviewPanel) overviewPanel.classList.toggle("active", viewName === "overview");
+  if (mapPanel) mapPanel.classList.toggle("active", viewName === "map");
+  if (tablePanel) tablePanel.classList.toggle("active", viewName === "table");
+
+  // 4. View-scoped body class
+  document.body.classList.toggle("view-overview-active", viewName === "overview");
+  document.body.classList.toggle("view-map-active", viewName === "map");
+  document.body.classList.toggle("view-table-active", viewName === "table");
+
+  // 5. Actions per view
+  if (viewName === "map") {
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 150);
+  } else if (viewName === "table") {
+    renderTable();
+  }
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/**
+ * 18. โฟกัสและซูมไปยังสถานีบนแผนที่
  */
 function focusStationOnMap(stationId) {
   const stationIdNum = Number(stationId);
@@ -2702,8 +2814,7 @@ function focusStationOnMap(stationId) {
   if (!st || !st.station.lat || !st.station.lon) return;
 
   if (currentView !== "map") {
-    const btnMap = document.getElementById("btnViewMap");
-    if (btnMap) btnMap.click();
+    switchView("map");
   }
 
   map.flyTo([st.station.lat, st.station.lon], 13, { duration: 0.8 });
@@ -2904,38 +3015,34 @@ function setupEventListeners() {
     });
   });
 
-  // View Switcher (Map vs Table)
+  // View Switcher (Overview / Map / Table)
+  const btnOverview = document.getElementById("btnViewOverview");
   const btnMap = document.getElementById("btnViewMap");
   const btnTable = document.getElementById("btnViewTable");
-  const mapContainer = document.getElementById("mapViewContainer");
-  const tableContainer = document.getElementById("tableViewContainer");
 
-  btnMap.addEventListener("click", () => {
-    btnMap.classList.add("active");
-    btnTable.classList.remove("active");
-    btnMap.setAttribute("aria-pressed", "true");
-    btnTable.setAttribute("aria-pressed", "false");
-    mapContainer.classList.add("active");
-    tableContainer.classList.remove("active");
-    currentView = "map";
-    setTimeout(() => map.invalidateSize(), 100);
+  btnOverview?.addEventListener("click", () => switchView("overview"));
+  btnMap?.addEventListener("click", () => switchView("map"));
+  btnTable?.addEventListener("click", () => switchView("table"));
+
+  // Mobile View Tabs
+  document.querySelectorAll(".m-view-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const v = tab.dataset.view;
+      if (v) switchView(v);
+    });
   });
 
-  btnTable.addEventListener("click", () => {
-    btnTable.classList.add("active");
-    btnMap.classList.remove("active");
-    btnTable.setAttribute("aria-pressed", "true");
-    btnMap.setAttribute("aria-pressed", "false");
-    tableContainer.classList.add("active");
-    mapContainer.classList.remove("active");
-    currentView = "table";
-    renderTable();
-  });
+  // Quick CTA Buttons in Overview
+  document.getElementById("ctaOpenMap")?.addEventListener("click", () => switchView("map"));
+  document.getElementById("ctaOpenTable")?.addEventListener("click", () => switchView("table"));
 
   // Sidebar: เลื่อนไปหมวด 5 แม่น้ำสายหลัก
   document.getElementById("btnNavRivers")?.addEventListener("click", () => {
     closeSidebar();
-    document.getElementById("riverCorridorSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (currentView !== "overview") switchView("overview");
+    setTimeout(() => {
+      document.getElementById("riverCorridorSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   });
 
   // Pagination
