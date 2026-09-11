@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=19">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
   <div class="app-shell">
@@ -570,8 +570,8 @@
           </button>
           <button class="modal-tab-btn" id="btnModalTabCrossSection" role="tab" aria-selected="false">
             <i data-lucide="activity" class="icon-xs"></i>
-            <span>แบบจำลองหน้าตัดลำน้ำ 2D</span>
-            <span class="tab-badge-new">SIM</span>
+            <span>ภาพจำลองหน้าตัดลำน้ำ 2D</span>
+            <span class="tab-badge-new">2D</span>
           </button>
         </div>
 
@@ -682,28 +682,7 @@
           <div class="cs-canvas-wrapper">
             <canvas id="crossSectionCanvas" width="700" height="280" role="img" aria-label="ภาพจำลองหน้าตัดลำน้ำ"></canvas>
           </div>
-
-          <!-- Interactive Simulator Controls (ลองปรับระดับน้ำจำลอง) -->
-          <div class="cs-simulator-controls">
-            <div class="sim-control-header">
-              <div class="sim-title">
-                <i data-lucide="sliders" class="icon-xs"></i>
-                <span>ทดลองปรับระดับน้ำขึ้น-ลงเพื่อดูผลกระทบ:</span>
-              </div>
-              <span class="sim-offset-badge" id="simOffsetBadge" aria-live="polite">+0.00 ม. (ระดับจริง)</span>
-              <button id="btnResetSim" class="btn-reset-sim">กลับสู่ระดับน้ำจริง</button>
-            </div>
-            <div class="sim-slider-row">
-              <span class="sim-min">-2.0ม.</span>
-              <input type="range" id="simWaterSlider" min="-2.0" max="2.5" step="0.05" value="0" class="sim-range-input" aria-label="ปรับระดับน้ำจำลอง">
-              <span class="sim-max">+2.5ม.</span>
-            </div>
-            <p class="sim-note">* แถบเลื่อนนี้เป็นแบบจำลองเพื่อประเมินระดับน้ำที่จะเริ่มล้นตลิ่งเข้าท่วมพื้นที่ริมฝั่ง</p>
-          </div>
         </div>
-      </div>
-    </div>
-  </div>
       </div>
     </div>
   </div>
@@ -735,7 +714,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=20"></script>
+  <script src="app.js?v=21"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

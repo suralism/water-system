@@ -2039,57 +2039,6 @@ img, canvas, svg { max-width: 100%; }
 }
 #crossSectionCanvas { display: block; width: 100%; height: auto; }
 
-.cs-simulator-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 13px 15px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--border-1);
-  background: var(--bg-inset);
-}
-.sim-control-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.sim-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-2);
-}
-.sim-offset-badge {
-  font-size: 0.74rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  padding: 3px 10px;
-  border-radius: var(--r-full);
-  background: var(--bg-card);
-  color: var(--text-1);
-  border: 1px solid var(--border-1);
-}
-.btn-reset-sim {
-  padding: 6px 13px;
-  border: none;
-  border-radius: var(--r-full);
-  background: var(--brand-primary);
-  color: #fff;
-  font-size: 0.74rem;
-  font-weight: 700;
-  transition: filter var(--t-fast);
-}
-.btn-reset-sim:hover { filter: brightness(1.12); }
-[data-theme="dark"] .btn-reset-sim { color: #0b1120; }
-
-.sim-slider-row { display: flex; align-items: center; gap: 10px; }
-.sim-min, .sim-max { font-size: 0.7rem; font-weight: 700; color: var(--text-3); white-space: nowrap; }
-.sim-note { font-size: 0.66rem; color: var(--text-3); opacity: 0.75; }
-
 /* Snapshot modal */
 .snapshot-modal-card { max-width: 980px; }
 .snapshot-canvas-container {

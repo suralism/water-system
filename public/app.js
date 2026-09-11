@@ -41,7 +41,6 @@ let compareYears = [];
 // 2D River Cross-Section Simulation
 let crossSectionAnimId = null;
 let crossSectionWavePhase = 0;
-let simOffsetM = 0;
 
 // RainViewer Doppler Radar
 let radarLayer = null;
@@ -1353,12 +1352,6 @@ async function openWaterModal(stationId) {
     situationLevel: stationWater.situationLevel,
   };
 
-  simOffsetM = 0;
-  const slider = document.getElementById("simWaterSlider");
-  if (slider) slider.value = "0";
-  const badge = document.getElementById("simOffsetBadge");
-  if (badge) badge.textContent = "+0.00 ม. (ระดับจริง)";
-
   document.getElementById("modalStationId").textContent = `ID: ${stationId}`;
   document.getElementById("modalStationName").textContent = st.nameTh || "สถานี " + stationId;
   document.getElementById("modalStationLocation").textContent = `${st.amphoeNameTh ? 'อ.' + st.amphoeNameTh : ''} จ.อุบลราชธานี (ลุ่มน้ำ: ${st.basinNameTh || '-'})`;
@@ -1462,12 +1455,12 @@ function drawCrossSection() {
 
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
 
-  // ค่าระดับน้ำจริง + ค่าจำลองจาก Slider
+  // ค่าระดับน้ำจริง
   const actualWaterLevel = currentModalStation.waterlevelMsl ?? 100;
   const bankLevel = currentModalStation.minBankMsl ?? (actualWaterLevel + 2);
   const bedLevel = bankLevel - 7; // สมมติท้องน้ำลึก 7 เมตรจากตลิ่ง
 
-  const simulatedWaterLevel = actualWaterLevel + simOffsetM;
+  const simulatedWaterLevel = actualWaterLevel;
   const currentFreeboard = bankLevel - simulatedWaterLevel;
   const isOverflow = currentFreeboard < 0;
   const isWarning = currentFreeboard <= 0.5 && !isOverflow;
@@ -2997,25 +2990,6 @@ function setupEventListeners() {
     graphSection.classList.add("hidden");
     currentModalTab = "crossSection";
     startCrossSectionSimulation();
-  });
-
-  // Simulator Range Slider
-  const simSlider = document.getElementById("simWaterSlider");
-  const simBadge = document.getElementById("simOffsetBadge");
-  const btnResetSim = document.getElementById("btnResetSim");
-
-  simSlider?.addEventListener("input", (e) => {
-    simOffsetM = parseFloat(e.target.value);
-    const sign = simOffsetM >= 0 ? "+" : "";
-    if (simBadge) {
-      simBadge.textContent = `${sign}${simOffsetM.toFixed(2)} ม. ${simOffsetM === 0 ? '(ระดับจริง)' : '(จำลอง)'}`;
-    }
-  });
-
-  btnResetSim?.addEventListener("click", () => {
-    simOffsetM = 0;
-    if (simSlider) simSlider.value = "0";
-    if (simBadge) simBadge.textContent = "+0.00 ม. (ระดับจริง)";
   });
 
   // Chart Range Buttons
