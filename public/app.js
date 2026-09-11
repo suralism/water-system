@@ -2683,27 +2683,24 @@ async function loadOverviewChart() {
   const loader = document.getElementById("ovChartLoader");
   if (loader) loader.classList.remove("hidden");
 
-  // อัปเดตค่าวัดสดของสถานีในส่วนหัวการ์ด
+  // อัปเดตค่าวัดสดของสถานีในส่วนหัวการ์ด (เหลือเฉพาะ ระดับน้ำปัจจุบัน & การเปลี่ยนแปลง 24 ชม.)
   const stWater = allWaterLevels.find((w) => w.station.id === currentOverviewStationId);
   if (stWater) {
     const waterVal = document.getElementById("ovStatWaterLevel");
-    const bankVal = document.getElementById("ovStatBankLevel");
-    const fbVal = document.getElementById("ovStatFreeboard");
-    const badge = document.getElementById("ovStatStatusBadge");
-
     if (waterVal) waterVal.textContent = stWater.waterlevelMsl !== null ? stWater.waterlevelMsl.toFixed(2) : "-";
-    if (bankVal) bankVal.textContent = stWater.minBankMsl !== null ? stWater.minBankMsl.toFixed(2) : "-";
-    if (fbVal) {
-      const fbObj = formatFreeboard(stWater.freeboardM, { withSign: true, returnObject: true });
-      fbVal.textContent = fbObj.num;
-      fbVal.className = `ov-stat-val ${stWater.freeboardM < 0 ? 'text-danger' : stWater.freeboardM <= 0.5 ? 'text-warning' : 'text-cyan'}`;
-    }
-    if (badge) {
-      const isOver = stWater.freeboardM !== null && stWater.freeboardM < 0;
-      const isWarn = stWater.freeboardM !== null && stWater.freeboardM <= 0.5;
-      badge.textContent = isOver ? "🚨 ล้นตลิ่ง" : isWarn ? "⚠️ เฝ้าระวัง" : "✅ ปกติ";
-      badge.className = `status-pill badge ${isOver ? 'danger' : isWarn ? 'warning' : 'safe'}`;
-    }
+  }
+
+  const changeVal = document.getElementById("ovStatChangeVal");
+  const changeUnit = document.getElementById("ovStatChangeUnit");
+  const changeBadge = document.getElementById("ovStatChangeBadge");
+  if (changeVal) {
+    changeVal.textContent = "กำลังคำนวณ...";
+    changeVal.className = "ov-stat-val text-muted";
+  }
+  if (changeUnit) changeUnit.textContent = "";
+  if (changeBadge) {
+    changeBadge.textContent = "―";
+    changeBadge.className = "status-pill badge normal";
   }
 
   try {
@@ -2739,11 +2736,107 @@ async function loadOverviewChart() {
       lastOverviewGraphResult = json.data;
       lastOverviewCompareResults = compareResults;
       renderOverviewChart(json.data, compareResults);
+      updateOverviewChangeMetric(json.data.points || []);
     }
   } catch (err) {
     console.error("Error loading overview chart:", err);
   } finally {
     if (loader) loader.classList.add("hidden");
+  }
+}
+
+/**
+ * คำนวณส่วนต่างระดับน้ำของสถานีใน Overview Chart เทียบกับเวลา 12.00 น. วันก่อนหน้า
+ */
+function updateOverviewChangeMetric(points) {
+  const changeVal = document.getElementById("ovStatChangeVal");
+  const changeUnit = document.getElementById("ovStatChangeUnit");
+  const changeBadge = document.getElementById("ovStatChangeBadge");
+  if (!changeVal) return;
+
+  const validPoints = (points || []).filter((p) => p && p.waterlevelMsl !== null && Number.isFinite(p.waterlevelMsl));
+  if (validPoints.length === 0) {
+    changeVal.textContent = "-";
+    changeVal.className = "ov-stat-val text-muted";
+    if (changeUnit) changeUnit.textContent = "";
+    if (changeBadge) {
+      changeBadge.textContent = "ไม่มีข้อมูล";
+      changeBadge.className = "status-pill badge normal";
+    }
+    return;
+  }
+
+  const latestPt = validPoints[validPoints.length - 1];
+  const latestVal = latestPt.waterlevelMsl;
+  const latestTimeStr = latestPt.observedAt || latestPt.rawDatetime;
+  if (!latestTimeStr) return;
+
+  const latestDt = new Date(latestTimeStr);
+  const thaiOffsetMs = 7 * 60 * 60 * 1000;
+  const latestThaiMs = latestDt.getTime() + thaiOffsetMs;
+  const latestThaiDate = new Date(latestThaiMs);
+
+  const prevThaiDate = new Date(latestThaiDate.getUTCFullYear(), latestThaiDate.getUTCMonth(), latestThaiDate.getUTCDate() - 1);
+  const targetNoonThaiMs = Date.UTC(prevThaiDate.getFullYear(), prevThaiDate.getMonth(), prevThaiDate.getDate(), 5, 0, 0, 0);
+
+  let bestPt = null;
+  let minDiffMs = 6 * 60 * 60 * 1000;
+
+  for (const pt of validPoints) {
+    const ptTimeStr = pt.observedAt || pt.rawDatetime;
+    if (!ptTimeStr) continue;
+    const ptMs = new Date(ptTimeStr).getTime();
+    const diffMs = Math.abs(ptMs - targetNoonThaiMs);
+    if (diffMs < minDiffMs) {
+      minDiffMs = diffMs;
+      bestPt = pt;
+    }
+  }
+
+  if (!bestPt) {
+    changeVal.textContent = "-";
+    changeVal.className = "ov-stat-val text-muted";
+    if (changeUnit) changeUnit.textContent = "";
+    if (changeBadge) {
+      changeBadge.textContent = "ไม่มีข้อมูลเทียบ";
+      changeBadge.className = "status-pill badge normal";
+    }
+    return;
+  }
+
+  const prevVal = bestPt.waterlevelMsl;
+  const diffM = latestVal - prevVal;
+  const diffCm = diffM * 100;
+  const absCm = Math.abs(diffCm);
+
+  if (Math.abs(diffCm) < 0.5) {
+    changeVal.textContent = "0.0";
+    if (changeUnit) changeUnit.textContent = "ซม.";
+    changeVal.className = "ov-stat-val text-muted";
+    if (changeBadge) {
+      changeBadge.textContent = "― ทรงตัว";
+      changeBadge.className = "status-pill badge normal";
+    }
+  } else if (diffM > 0) {
+    const cmFormatted = absCm >= 100 ? `+${diffM.toFixed(2)}` : `+${absCm.toFixed(1)}`;
+    const unitText = absCm >= 100 ? "ม." : "ซม.";
+    changeVal.textContent = cmFormatted;
+    if (changeUnit) changeUnit.textContent = unitText;
+    changeVal.className = "ov-stat-val text-danger";
+    if (changeBadge) {
+      changeBadge.textContent = "▲ เพิ่มขึ้น";
+      changeBadge.className = "status-pill badge danger";
+    }
+  } else {
+    const cmFormatted = absCm >= 100 ? `-${Math.abs(diffM).toFixed(2)}` : `-${absCm.toFixed(1)}`;
+    const unitText = absCm >= 100 ? "ม." : "ซม.";
+    changeVal.textContent = cmFormatted;
+    if (changeUnit) changeUnit.textContent = unitText;
+    changeVal.className = "ov-stat-val text-success";
+    if (changeBadge) {
+      changeBadge.textContent = "▼ ลดลง";
+      changeBadge.className = "status-pill badge safe";
+    }
   }
 }
 
