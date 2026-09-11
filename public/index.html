@@ -29,7 +29,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <link rel="stylesheet" href="styles.css?v=17">
+  <link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
   <div class="app-shell">
@@ -575,64 +575,65 @@
           </button>
         </div>
 
-        <!-- Metrics Grid: Hero Card Style -->
+        <!-- Metrics Grid: Unified Professional Cards -->
         <div class="modal-metrics-grid">
-          <!-- กล่องหลัก 1: ระดับน้ำปัจจุบัน -->
-          <div class="metric-box metric-hero primary">
+          <!-- กล่อง 1: ระดับน้ำปัจจุบัน -->
+          <div class="metric-box card-water-current">
             <div class="metric-head">
               <span class="metric-title">ระดับน้ำปัจจุบัน</span>
-              <span class="metric-pill">MSL</span>
+              <span class="metric-pill info">ม.รทก.</span>
             </div>
             <div class="metric-body">
               <span class="metric-num text-cyan" id="modalWaterLevelMsl">-</span>
               <span class="metric-unit">ม.รทก.</span>
             </div>
-            <span class="metric-hint">เทียบระดับน้ำทะเลปานกลาง</span>
+            <span class="metric-hint">เทียบระดับทะเลปานกลาง</span>
           </div>
 
-          <!-- กล่องหลัก 2: การเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า -->
-          <div class="metric-box metric-hero change-box" id="modalChangeBox">
+          <!-- กล่อง 2: การเปลี่ยนแปลงเทียบ 12.00 น. วันก่อนหน้า -->
+          <div class="metric-box change-box" id="modalChangeBox">
             <div class="metric-head">
-              <span class="metric-title">การเปลี่ยนแปลง</span>
-              <span class="metric-pill" id="modalChangeBadge">24 ชม.</span>
+              <span class="metric-title">การเปลี่ยนแปลง 24 ชม.</span>
+              <span class="metric-pill normal" id="modalChangeBadge">― ทรงตัว</span>
             </div>
             <div class="metric-body">
-              <span class="metric-num" id="modalWaterChangeVal">-</span>
+              <span class="metric-num text-muted" id="modalWaterChangeVal">-</span>
               <span class="metric-unit" id="modalWaterChangeUnit"></span>
             </div>
             <span class="metric-hint" id="modalWaterChangeHint">เทียบ 12.00 น. เมื่อวาน</span>
           </div>
 
-          <!-- กล่องรอง 1: ระดับตลิ่ง -->
-          <div class="metric-box">
+          <!-- กล่อง 3: ระดับตลิ่ง -->
+          <div class="metric-box card-bank-level">
             <div class="metric-head">
               <span class="metric-title">ระดับตลิ่ง</span>
+              <span class="metric-pill bank-tag">เกณฑ์วิกฤต</span>
             </div>
             <div class="metric-body">
               <span class="metric-num" id="modalMinBankMsl">-</span>
               <span class="metric-unit">ม.รทก.</span>
             </div>
-            <span class="metric-hint">จุดเริ่มล้นตลิ่ง</span>
+            <span class="metric-hint">จุดเริ่มเอ่อล้นตลิ่ง</span>
           </div>
 
-          <!-- กล่องรอง 2: ระยะพ้นตลิ่ง (Critical) -->
+          <!-- กล่อง 4: ระยะพ้นตลิ่ง -->
           <div class="metric-box freeboard" id="modalFreeboardBox">
             <div class="metric-head">
               <span class="metric-title">ระยะพ้นตลิ่ง</span>
-              <span class="metric-pill freeboard-tag">สถานะ</span>
+              <span class="metric-pill freeboard-tag" id="modalFreeboardTag">ปกติ</span>
             </div>
             <div class="metric-body">
               <span class="metric-num" id="modalFreeboardM">-</span>
               <span class="metric-unit" id="modalFreeboardUnit">ม.</span>
             </div>
-            <span class="metric-hint">ระยะห่างถึงขอบตลิ่ง</span>
+            <span class="metric-hint" id="modalFreeboardHint">ระยะห่างถึงขอบตลิ่ง</span>
           </div>
         </div>
 
         <!-- TAB 1: Graph Section -->
         <div class="graph-section" id="modalGraphSection" role="tabpanel">
           <div class="graph-toolbar">
-            <div class="graph-toolbar-group">
+            <div class="graph-toolbar-group range-group">
               <span class="toolbar-label"><i data-lucide="calendar" class="icon-xs"></i> ช่วงเวลา:</span>
               <div class="graph-range-picker" role="group" aria-label="เลือกช่วงเวลากราฟ">
                 <button class="btn-range active" data-days="1" aria-pressed="true">24 ชม.</button>
@@ -641,6 +642,8 @@
                 <button class="btn-range" data-days="30" aria-pressed="false">30 วัน</button>
               </div>
             </div>
+
+            <div class="graph-toolbar-divider" aria-hidden="true"></div>
 
             <div class="graph-toolbar-group compare-group" id="graphComparePicker" role="group" aria-label="เทียบปีน้ำท่วมใหญ่">
               <span class="toolbar-label compare-label"><i data-lucide="git-compare-arrows" class="icon-xs"></i> เทียบปีน้ำท่วม:</span>
@@ -733,7 +736,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

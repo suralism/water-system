@@ -1382,6 +1382,8 @@ async function openWaterModal(stationId) {
   const freeboardEl = document.getElementById("modalFreeboardM");
   const freeboardUnitEl = document.getElementById("modalFreeboardUnit");
   const freeboardBox = document.getElementById("modalFreeboardBox");
+  const freeboardTag = document.getElementById("modalFreeboardTag");
+  const freeboardHint = document.getElementById("modalFreeboardHint");
 
   const isOverflow = stationWater.freeboardM !== null && stationWater.freeboardM < 0;
   const isWarning = (stationWater.freeboardM !== null && stationWater.freeboardM <= 0.5) ||
@@ -1392,25 +1394,33 @@ async function openWaterModal(stationId) {
     freeboardEl.textContent = fbObj.num;
     if (freeboardUnitEl) freeboardUnitEl.textContent = fbObj.unit;
     freeboardEl.style.color = isOverflow ? "var(--danger)" : isWarning ? "var(--warning)" : "var(--success)";
+    if (freeboardHint) {
+      freeboardHint.textContent = isOverflow ? "ระดับน้ำท่วมล้นตลิ่งแล้ว" : `ห่างจากขอบตลิ่ง ${fbObj.num.replace('+', '')} ${fbObj.unit}`;
+    }
   } else {
     freeboardEl.textContent = "-";
     if (freeboardUnitEl) freeboardUnitEl.textContent = "ม.";
     freeboardEl.style.color = "var(--text-1)";
+    if (freeboardHint) freeboardHint.textContent = "ระยะห่างถึงขอบตลิ่ง";
   }
 
   if (freeboardBox) {
     freeboardBox.className = `metric-box freeboard ${isOverflow ? 'danger' : isWarning ? 'warning' : 'safe'}`;
   }
+  if (freeboardTag) {
+    freeboardTag.textContent = isOverflow ? "ล้นตลิ่ง" : isWarning ? "เฝ้าระวัง" : "ปกติ";
+    freeboardTag.className = `metric-pill ${isOverflow ? 'danger' : isWarning ? 'warning' : 'success'}`;
+  }
 
   const statusPill = document.getElementById("modalStatusPill");
   if (isOverflow) {
-    statusPill.textContent = "🚨 ล้นตลิ่ง";
+    statusPill.innerHTML = `<span class="status-dot-pulse danger"></span> ล้นตลิ่ง`;
     statusPill.className = "status-pill badge danger";
   } else if (isWarning) {
-    statusPill.textContent = "⚠️ เฝ้าระวังใกล้ตลิ่ง";
+    statusPill.innerHTML = `<span class="status-dot-pulse warning"></span> เฝ้าระวังใกล้ตลิ่ง`;
     statusPill.className = "status-pill badge warning";
   } else {
-    statusPill.textContent = "✅ ระดับน้ำปกติ";
+    statusPill.innerHTML = `<span class="status-dot-pulse normal"></span> ระดับน้ำปกติ`;
     statusPill.className = "status-pill badge normal";
   }
 
@@ -2287,12 +2297,18 @@ function updateWaterChangeMetric(points) {
     }
   }
 
+  const changeBadge = document.getElementById("modalChangeBadge");
+
   if (!bestPt) {
     changeValEl.textContent = "ไม่มีข้อมูล";
     changeValEl.className = "metric-num text-muted";
     if (changeUnitEl) changeUnitEl.textContent = "";
     if (changeHintEl) changeHintEl.textContent = "ไม่มีข้อมูล 12.00 น. เมื่อวาน";
-    if (changeBox) changeBox.className = "metric-box metric-hero change-box";
+    if (changeBadge) {
+      changeBadge.textContent = "―";
+      changeBadge.className = "metric-pill normal";
+    }
+    if (changeBox) changeBox.className = "metric-box change-box change-steady";
     return;
   }
 
@@ -2307,30 +2323,42 @@ function updateWaterChangeMetric(points) {
 
   if (Math.abs(diffCm) < 0.5) {
     // ทรงตัว (เปลี่ยนแปลงน้อยกว่า 0.5 ซม.)
-    changeValEl.innerHTML = `<span class="change-direction steady">ทรงตัว</span> 0`;
+    changeValEl.textContent = "0.0";
     if (changeUnitEl) changeUnitEl.textContent = "ซม.";
     changeValEl.className = "metric-num text-muted";
-    if (changeBox) changeBox.className = "metric-box change-steady";
+    if (changeBadge) {
+      changeBadge.textContent = "― ทรงตัว";
+      changeBadge.className = "metric-pill normal";
+    }
+    if (changeBox) changeBox.className = "metric-box change-box change-steady";
   } else if (diffM > 0) {
     // เพิ่มขึ้น
-    const cmFormatted = absCm >= 100 ? (diffM).toFixed(2) : absCm.toFixed(1);
+    const cmFormatted = absCm >= 100 ? `+${diffM.toFixed(2)}` : `+${absCm.toFixed(1)}`;
     const unitText = absCm >= 100 ? "ม." : "ซม.";
-    changeValEl.innerHTML = `<span class="change-direction up">▲ เพิ่มขึ้น</span> ${cmFormatted}`;
+    changeValEl.textContent = cmFormatted;
     if (changeUnitEl) changeUnitEl.textContent = unitText;
     changeValEl.className = "metric-num text-danger";
-    if (changeBox) changeBox.className = "metric-box change-up";
+    if (changeBadge) {
+      changeBadge.textContent = "▲ เพิ่มขึ้น";
+      changeBadge.className = "metric-pill danger";
+    }
+    if (changeBox) changeBox.className = "metric-box change-box change-up";
   } else {
     // ลดลง
-    const cmFormatted = absCm >= 100 ? Math.abs(diffM).toFixed(2) : absCm.toFixed(1);
+    const cmFormatted = absCm >= 100 ? `-${Math.abs(diffM).toFixed(2)}` : `-${absCm.toFixed(1)}`;
     const unitText = absCm >= 100 ? "ม." : "ซม.";
-    changeValEl.innerHTML = `<span class="change-direction down">▼ ลดลง</span> ${cmFormatted}`;
+    changeValEl.textContent = cmFormatted;
     if (changeUnitEl) changeUnitEl.textContent = unitText;
     changeValEl.className = "metric-num text-success";
-    if (changeBox) changeBox.className = "metric-box change-down";
+    if (changeBadge) {
+      changeBadge.textContent = "▼ ลดลง";
+      changeBadge.className = "metric-pill success";
+    }
+    if (changeBox) changeBox.className = "metric-box change-box change-down";
   }
 
   if (changeHintEl) {
-    changeHintEl.textContent = `เทียบเวลา ${timeRefStr} เมื่อวาน (${prevVal.toFixed(2)} ม.)`;
+    changeHintEl.textContent = `จาก ${prevVal.toFixed(2)} ม. (วานนี้ ${timeRefStr})`;
   }
 }
 
