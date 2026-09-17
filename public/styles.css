@@ -1841,7 +1841,7 @@ body.view-overview-active #rainKpiGrid {
 .radar-player-bar {
   position: absolute;
   left: 12px;
-  right: 12px;
+  right: 54px; /* เว้นที่ให้ปุ่ม zoom +/- มุมขวาล่าง */
   bottom: 14px;
   z-index: 20;
   display: flex;

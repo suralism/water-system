@@ -2658,7 +2658,8 @@ function populateOverviewStationSelect() {
   select.innerHTML = sorted.map((item) => {
     const st = item.station;
     const isM7 = (st.nameTh && st.nameTh.includes("M.7")) || st.id === 3543;
-    const code = isM7 ? "⭐ M.7 - " : (st.oldcode ? `${st.oldcode} - ` : "");
+    const cleanCode = st.oldcode ? st.oldcode.replace(/^ridhydro_/i, "").trim() : "";
+    const code = isM7 ? "⭐ M.7 - " : (cleanCode ? `${cleanCode} - ` : "");
     const name = st.nameTh || `สถานี ${st.id}`;
     const amphoe = st.amphoeNameTh ? ` (อ.${st.amphoeNameTh})` : "";
     return `<option value="${st.id}">${code}${name}${amphoe}</option>`;
