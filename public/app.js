@@ -148,7 +148,20 @@ function formatFreeboardWithTrend(freeboardM, stationId, currentMsl) {
 async function loadMapKey() {
   try {
     const res = await fetchSafeJson("/api/map-key");
-    stadiaKey = res?.key ?? null;
+    const key = res?.key ?? null;
+    if (key) {
+      // ตรวจสอบว่า Stadia ยอมให้ domain นี้ใช้งานจริง (ไม่ใช่ attachment)
+      const testUrl = `https://tiles.stadiamaps.com/tiles/alidade_smooth/6/49/32.png?api_key=${key}`;
+      try {
+        const r = await fetch(testUrl, { method: "HEAD" });
+        const disp = r.headers.get("content-disposition") || "";
+        stadiaKey = (r.ok && !disp.includes("attachment")) ? key : null;
+      } catch {
+        stadiaKey = null;
+      }
+    } else {
+      stadiaKey = null;
+    }
   } catch {
     stadiaKey = null;
   }
@@ -515,11 +528,14 @@ function updateKPIs() {
   const ovMaxRainStEl = document.getElementById("ovKpiMaxRainStation");
   if (ovMaxRainStEl) ovMaxRainStEl.textContent = maxRainStationStr;
 
-  const nowStr = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-  document.getElementById("cacheStatusText").textContent = `ข้อมูลสด (${nowStr} น.)`;
+  const _now = new Date();
+  const nowDate = _now.toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "2-digit" });
+  const nowTime = _now.toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  const nowStr = `${nowDate} ${nowTime}`;
+  document.getElementById("cacheStatusText").textContent = `อัพเดทล่าสุด ${nowStr} น.`;
 
   const execTimeBadge = document.getElementById("execTimeBadge");
-  if (execTimeBadge) execTimeBadge.innerHTML = `<i data-lucide="clock" class="icon-xs"></i> ข้อมูลสด ${nowStr} น.`;
+  if (execTimeBadge) execTimeBadge.innerHTML = `<i data-lucide="clock" class="icon-xs"></i> อัพเดทล่าสุด ${nowStr} น.`;
 
   // Executive Summary Banner Narrative
   const execSummary = document.getElementById("execSummaryText");

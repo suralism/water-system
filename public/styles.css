@@ -947,6 +947,14 @@ body.view-overview-active #rainKpiGrid {
   display: none !important;
 }
 
+/* โหมดแผนที่: ซ่อนการ์ด KPI และช่องค้นหา/ตัวกรอง เหลือแค่แผนที่กับรายชื่อสถานี */
+body.view-map-active #controlsBar,
+body.view-map-active .filter-sheet-toggle,
+body.view-map-active #waterKpiGrid,
+body.view-map-active #rainKpiGrid {
+  display: none !important;
+}
+
 /* ===== Mobile View Tabs (แถบสลับมุมมองด่วนบนจอมือถือ) ===== */
 .mobile-view-tabs {
   display: none;
