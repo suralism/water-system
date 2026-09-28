@@ -5,6 +5,7 @@ import {
   D1Database,
   syncSnapshotToD1,
   queryWaterLevelHistory,
+  queryWaterLevelSnapshotFromD1,
   upsertWaterLevelGraphPoints,
 } from "./db.js";
 import { toIso } from "./thaiwater.js";
@@ -17,10 +18,15 @@ type Bindings = {
 };
 
 // สร้าง Service สำหรับจัดการแคชใน Worker isolate
-const thaiWaterService = new ThaiWaterService({
-  ttlMs: 5 * 60 * 1000, // 5 นาที
-  autoStartPolling: false, // บน Workers ใช้ Cron Triggers แทน setInterval
-});
+const thaiWaterService = new ThaiWaterService(
+  {
+    ttlMs: 5 * 60 * 1000, // 5 นาที
+    autoStartPolling: false, // บน Workers ใช้ Cron Triggers แทน setInterval
+  },
+  {
+    timeoutMs: 25000, // abort upstream request ที่ช้าเกิน 25 วินาที
+  }
+);
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -192,10 +198,35 @@ app.get("/api/summary", async (c) => {
 
 /**
  * 2. API: รายการระดับน้ำ Snapshot จ.อุบลราชธานี (พร้อม Filter)
+ *    ลำดับการดึง: in-memory cache → upstream API → D1 fallback
  */
 app.get("/api/water-levels", async (c) => {
   try {
-    let list = await thaiWaterService.getWaterLevel();
+    let list: WaterLevelRecord[];
+    let source = "thaiwater-cache";
+
+    try {
+      list = await thaiWaterService.getWaterLevel();
+    } catch (upstreamErr: any) {
+      console.error("[Water-Level] Upstream failed, trying D1 fallback:", upstreamErr?.message);
+      list = [];
+    }
+
+    // D1 Fallback: ถ้า upstream ล้มหรือไม่มีข้อมูล ให้อ่าน snapshot ล่าสุดจาก D1
+    if (!list || list.length === 0) {
+      if (c.env?.DB) {
+        const d1List = await queryWaterLevelSnapshotFromD1(c.env.DB);
+        if (d1List && d1List.length > 0) {
+          list = d1List;
+          source = "d1-fallback";
+          c.header("X-Data-Source", "Cloudflare-D1-Fallback");
+        }
+      }
+      if (!list || list.length === 0) {
+        return c.json({ success: false, message: "No water level data available (upstream & D1 both unavailable)" }, 503);
+      }
+    }
+
     list = filterByAmphoe(list, c.req.query("amphoe"));
     list = filterWaterByStatus(list, c.req.query("status"));
     list = filterBySearch(list, c.req.query("search"));
@@ -204,7 +235,7 @@ app.get("/api/water-levels", async (c) => {
     list = applyLimit(list, c.req.query("limit"));
 
     c.header("Cache-Control", CACHE_CONTROL_SHORT);
-    return c.json({ success: true, count: list.length, total, data: list });
+    return c.json({ success: true, source, count: list.length, total, data: list });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }
@@ -212,11 +243,12 @@ app.get("/api/water-levels", async (c) => {
 
 /**
  * 3. API: รายการน้ำฝน Snapshot จ.อุบลราชธานี (กรองสถานีซ้ำออก)
+ *    ถ้า upstream ล้ม จะคืน error แบบสุภาพพร้อมข้อความ (น้ำฝนไม่มี D1 fallback เพราะ upstream ไม่มี rainfall history)
  */
 app.get("/api/rainfall", async (c) => {
   try {
     const [waterLevels, allRain] = await Promise.all([
-      thaiWaterService.getWaterLevel(),
+      thaiWaterService.getWaterLevel().catch(() => [] as WaterLevelRecord[]),
       thaiWaterService.getRainfall(),
     ]);
 

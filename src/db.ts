@@ -341,6 +341,80 @@ export async function queryWaterLevelHistory(
 }
 
 /**
+ * Fallback: อ่าน Snapshot ระดับน้ำล่าสุดของทุกสถานีจาก D1
+ * ใช้เมื่อ upstream ThaiWater API ล้มหรือตอบช้าเกินไป
+ */
+export async function queryWaterLevelSnapshotFromD1(
+  db: D1Database
+): Promise<WaterLevelRecord[] | null> {
+  try {
+    const stationRows = await db
+      .prepare(`SELECT * FROM stations`)
+      .all<any>();
+    const stations = stationRows.results ?? [];
+    if (stations.length === 0) return null;
+
+    const stationById = new Map(stations.map((s) => [Number(s.id), s]));
+
+    // ดึงจุดวัดล่าสุดของแต่ละสถานี (correlated subquery ต่อสถานี)
+    const latestResults = await Promise.all(
+      stations.map((s) =>
+        db
+          .prepare(
+            `SELECT observed_at, waterlevel_msl, waterlevel_local_m, situation_level, storage_percent
+             FROM water_level_history
+             WHERE station_id = ? AND waterlevel_msl IS NOT NULL
+             ORDER BY observed_at DESC LIMIT 1`
+          )
+          .bind(Number(s.id))
+          .first<any>()
+      )
+    );
+
+    const records: WaterLevelRecord[] = [];
+    for (let i = 0; i < stations.length; i++) {
+      const s = stations[i];
+      const latest = latestResults[i];
+      if (!latest || latest.waterlevel_msl === null || latest.waterlevel_msl === undefined) continue;
+
+      const waterlevelMsl = Number(latest.waterlevel_msl);
+      const minBankMsl = s.min_bank_msl !== null && s.min_bank_msl !== undefined ? Number(s.min_bank_msl) : null;
+      const freeboardM =
+        minBankMsl !== null ? Math.round((minBankMsl - waterlevelMsl) * 1000) / 1000 : null;
+
+      records.push({
+        station: {
+          id: Number(s.id),
+          oldcode: s.oldcode ?? null,
+          nameTh: s.name_th ?? null,
+          nameEn: s.name_en ?? null,
+          lat: Number(s.lat) || 0,
+          lon: Number(s.lon) || 0,
+          provinceCode: s.province_code ?? null,
+          provinceNameTh: s.province_name_th ?? null,
+          amphoeNameTh: s.amphoe_name_th ?? null,
+          tumbonNameTh: s.tumbon_name_th ?? null,
+          basinNameTh: s.basin_name_th ?? null,
+          agencyNameTh: s.agency_name_th ?? null,
+        },
+        waterlevelMsl,
+        waterlevelLocalM: latest.waterlevel_local_m !== null && latest.waterlevel_local_m !== undefined ? Number(latest.waterlevel_local_m) : null,
+        minBankMsl,
+        freeboardM,
+        situationLevel: latest.situation_level !== null && latest.situation_level !== undefined ? Number(latest.situation_level) : null,
+        storagePercent: latest.storage_percent !== null && latest.storage_percent !== undefined ? Number(latest.storage_percent) : null,
+        observedAt: latest.observed_at,
+      });
+    }
+
+    return records.length > 0 ? records : null;
+  } catch (err) {
+    console.warn("[D1 Snapshot Fallback Error]:", err);
+    return null;
+  }
+}
+
+/**
  * ซิงก์ทั้งข้อมูลสถานี (Stations) และข้อมูลระดับน้ำ/น้ำฝน (Snapshots) ลง D1 ในคราวเดียว
  */
 export async function syncSnapshotToD1(
