@@ -249,37 +249,18 @@ function triggerRainBackgroundRefresh(c: any): void {
 }
 
 /**
- * ดึงข้อมูลระดับน้ำแบบ Resilient:
- * 1) in-memory cache (สด ≤ 5 นาที) → คืนทันที
- * 2) cache หมดอายุ → รอ upstream สูงสุด CACHE_WAIT_MS (2.5 วินาที)
- *    - ถ้า upstream ตอบทัน → คืนข้อมูลสด
- *    - ถ้าไม่ทัน (upstream ช้า 10-11s) → คืนจาก D1 ทันที + ให้ upstream fetch ที่ยังค้าง
- *      ทำงานต่อในเบื้องหลัง (single-flight) แล้ว sync ลง D1 เมื่อเสร็จ
+ * ดึงข้อมูลระดับน้ำแบบ Resilient — **ห้ามรอ upstream ก่อนแสดงผลเด็ดขาด**
+ * 1) peek in-memory cache (สด ≤ 5 นาที จาก cron/background) → คืนทันที (0ms)
+ * 2) D1 snapshot (เร็ว ~10ms) → คืนทันที + trigger background refresh จาก upstream
  * 3) upstream แบบ synchronous (เฉพาะเคส D1 ว่างด้วย เช่น request แรกของระบบ)
  */
 
-// รอ upstream จาก cache path สูงสุด 2.5 วินาที — เกินนี้ให้ตอบจาก D1 ทันที
-const UPSTREAM_WAIT_MS = 2500;
-
-/** race helper: คืน null ถ้า promise ไม่เสร็จภายใน timeoutMs (promise เดิมยังรันต่อ) */
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | null> {
-  return Promise.race([
-    promise,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
-  ]);
-}
-
 async function getWaterLevelsResilient(c: any): Promise<{ list: WaterLevelRecord[]; source: string }> {
-  // 1) in-memory cache (หรือรอ pending upstream fetch ได้สูงสุด 2.5 วินาที)
-  try {
-    const cached = await withTimeout(thaiWaterService.getWaterLevel(), UPSTREAM_WAIT_MS);
-    if (cached && cached.length > 0) return { list: cached, source: "thaiwater-cache" };
-  } catch {
-    // upstream ล้ม — ไปต่อที่ D1
-  }
+  // 1) peek in-memory cache — ไม่ trigger fetch ไม่มีการรอ upstream
+  const cached = thaiWaterService.peekWaterLevel();
+  if (cached && cached.length > 0) return { list: cached, source: "thaiwater-cache" };
 
-  // 2) D1 snapshot + background refresh (upstream fetch ที่ยังค้างจากขั้น 1 จะทำงานต่อ
-  //    และ trigger ด้านล่างจะ join pending เดิม เพื่อ sync ลง D1 เมื่อเสร็จ)
+  // 2) D1 snapshot + background refresh (upstream จะถูกดึงเบื้องหลังและ sync ลง D1)
   if (c.env?.DB) {
     const d1List = await queryWaterLevelSnapshotFromD1(c.env.DB);
     if (d1List && d1List.length > 0) {
@@ -288,20 +269,18 @@ async function getWaterLevelsResilient(c: any): Promise<{ list: WaterLevelRecord
     }
   }
 
-  // 3) upstream แบบ synchronous (เฉพาะกรณี D1 ยังไม่มีข้อมูลเลย)
+  // 3) upstream แบบ synchronous (เฉพาะกรณี D1 ยังไม่มีข้อมูลเลย — request แรกของระบบ)
   const upstream = await thaiWaterService.getWaterLevel(true);
   return { list: upstream, source: "thaiwater-live" };
 }
 
 /** ดึงข้อมูลน้ำฝนแบบ Resilient (โครงสร้างเดียวกับ getWaterLevelsResilient) */
 async function getRainfallsResilient(c: any): Promise<{ list: RainfallRecord[]; source: string }> {
-  try {
-    const cached = await withTimeout(thaiWaterService.getRainfall(), UPSTREAM_WAIT_MS);
-    if (cached && cached.length > 0) return { list: cached, source: "thaiwater-cache" };
-  } catch {
-    // upstream ล้ม — ไปต่อที่ D1
-  }
+  // 1) peek in-memory cache — ไม่ trigger fetch ไม่มีการรอ upstream
+  const cached = thaiWaterService.peekRainfall();
+  if (cached && cached.length > 0) return { list: cached, source: "thaiwater-cache" };
 
+  // 2) D1 snapshot + background refresh
   if (c.env?.DB) {
     const d1List = await queryRainfallSnapshotFromD1(c.env.DB);
     if (d1List && d1List.length > 0) {
@@ -310,6 +289,7 @@ async function getRainfallsResilient(c: any): Promise<{ list: RainfallRecord[]; 
     }
   }
 
+  // 3) upstream แบบ synchronous (เฉพาะกรณี D1 ยังไม่มีข้อมูลเลย)
   const upstream = await thaiWaterService.getRainfall(true);
   return { list: upstream, source: "thaiwater-live" };
 }

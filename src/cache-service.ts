@@ -104,6 +104,23 @@ export class ThaiWaterService {
   }
 
   /**
+   * Peek: อ่านเฉพาะ in-memory cache ที่ยังสด โดย**ไม่ trigger upstream fetch**
+   * ใช้กับ Data Flow "D1-first + Background Refresh" เพื่อให้ผู้ใช้ไม่ต้องรอ upstream เด็ดขาด
+   * คืน null ถ้า cache ว่างหรือหมดอายุ (caller จะไปอ่าน D1 แทน)
+   */
+  peekWaterLevel(): WaterLevelRecord[] | null {
+    const entry = this.waterLevelCache;
+    if (entry && Date.now() - entry.cachedAt < this.ttlMs) return entry.data;
+    return null;
+  }
+
+  peekRainfall(): RainfallRecord[] | null {
+    const entry = this.rainfallCache;
+    if (entry && Date.now() - entry.cachedAt < this.ttlMs) return entry.data;
+    return null;
+  }
+
+  /**
    * ดึงข้อมูลปริมาณน้ำฝน (Rainfall) โดยใช้ระบบ Cache & Request Deduplication
    */
   async getRainfall(forceRefresh = false): Promise<RainfallRecord[]> {
