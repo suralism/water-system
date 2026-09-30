@@ -142,10 +142,11 @@ const CACHE_CONTROL_LONG = "public, s-maxage=3600, max-age=300";
 app.get("/api/summary", async (c) => {
   try {
     const amphoe = c.req.query("amphoe");
-    const [{ list: waterLevelsAll }, { list: rawRainfalls }] = await Promise.all([
+    const [{ list: waterLevelsAll, source }, { list: rawRainfalls }] = await Promise.all([
       getWaterLevelsResilient(c),
       getRainfallsResilient(c),
     ]);
+    if (source === "collecting") return collectingResponse(c);
 
     const waterIds = new Set(waterLevelsAll.map((w) => w.station.id));
     let rainfalls = filterOutWaterStations(rawRainfalls, waterIds);
@@ -249,10 +250,11 @@ function triggerRainBackgroundRefresh(c: any): void {
 }
 
 /**
- * ดึงข้อมูลระดับน้ำแบบ Resilient — **ห้ามรอ upstream ก่อนแสดงผลเด็ดขาด**
+ * ดึงข้อมูลระดับน้ำแบบ Resilient — **แสดงผลจากฐานข้อมูล/แคชเท่านั้น ห้ามรอ upstream เด็ดขาด**
  * 1) peek in-memory cache (สด ≤ 5 นาที จาก cron/background) → คืนทันที (0ms)
  * 2) D1 snapshot (เร็ว ~10ms) → คืนทันที + trigger background refresh จาก upstream
- * 3) upstream แบบ synchronous (เฉพาะเคส D1 ว่างด้วย เช่น request แรกของระบบ)
+ * 3) D1 ว่างด้วย → trigger background refresh แล้วคืนลิสต์ว่าง (source: "collecting")
+ *    endpoint จะตอบ 503 ให้ frontend ลองใหม่ — upstream จะถูกดึงเบื้องหลังเท่านั้น
  */
 
 async function getWaterLevelsResilient(c: any): Promise<{ list: WaterLevelRecord[]; source: string }> {
@@ -269,9 +271,9 @@ async function getWaterLevelsResilient(c: any): Promise<{ list: WaterLevelRecord
     }
   }
 
-  // 3) upstream แบบ synchronous (เฉพาะกรณี D1 ยังไม่มีข้อมูลเลย — request แรกของระบบ)
-  const upstream = await thaiWaterService.getWaterLevel(true);
-  return { list: upstream, source: "thaiwater-live" };
+  // 3) ฐานข้อมูลยังว่าง (เช่นระบบเพิ่งเริ่มต้น) → เก็บข้อมูลเบื้องหลัง ไม่บล็อก request
+  triggerWaterBackgroundRefresh(c);
+  return { list: [], source: "collecting" };
 }
 
 /** ดึงข้อมูลน้ำฝนแบบ Resilient (โครงสร้างเดียวกับ getWaterLevelsResilient) */
@@ -289,14 +291,27 @@ async function getRainfallsResilient(c: any): Promise<{ list: RainfallRecord[]; 
     }
   }
 
-  // 3) upstream แบบ synchronous (เฉพาะกรณี D1 ยังไม่มีข้อมูลเลย)
-  const upstream = await thaiWaterService.getRainfall(true);
-  return { list: upstream, source: "thaiwater-live" };
+  // 3) ฐานข้อมูลยังว่าง → เก็บข้อมูลเบื้องหลัง ไม่บล็อก request
+  triggerRainBackgroundRefresh(c);
+  return { list: [], source: "collecting" };
+}
+
+/** Response กรณีฐานข้อมูลยังว่าง (ระบบเพิ่งเริ่มต้น) — frontend จะลองใหม่เองอัตโนมัติ */
+function collectingResponse(c: any) {
+  return c.json(
+    {
+      success: false,
+      source: "collecting",
+      message: "กำลังรวบรวมข้อมูลครั้งแรกเข้าฐานข้อมูล ลองใหม่ในอีกสักครู่",
+    },
+    503
+  );
 }
 
 app.get("/api/water-levels", async (c) => {
   try {
     const { list: rawList, source } = await getWaterLevelsResilient(c);
+    if (source === "collecting") return collectingResponse(c);
 
     let list = filterByAmphoe(rawList, c.req.query("amphoe"));
     list = filterWaterByStatus(list, c.req.query("status"));
@@ -323,6 +338,7 @@ app.get("/api/rainfall", async (c) => {
       getWaterLevelsResilient(c),
       getRainfallsResilient(c),
     ]);
+    if (source === "collecting" || rainSource === "collecting") return collectingResponse(c);
 
     const waterIds = new Set(rawWater.map((w) => w.station.id));
     let list = filterOutWaterStations(rawRain, waterIds);
@@ -353,10 +369,11 @@ app.get("/api/rainfall", async (c) => {
  */
 app.get("/api/map-points", async (c) => {
   try {
-    const [{ list: waterLevels }, { list: rainfalls }] = await Promise.all([
+    const [{ list: waterLevels, source }, { list: rainfalls, source: rainSource }] = await Promise.all([
       getWaterLevelsResilient(c),
       getRainfallsResilient(c),
     ]);
+    if (source === "collecting" || rainSource === "collecting") return collectingResponse(c);
 
     const rainById = new Map(rainfalls.map((r) => [r.station.id, r]));
     const list = waterLevels.map((wl) => {
@@ -396,10 +413,11 @@ app.get("/api/map-points", async (c) => {
  */
 app.get("/api/amphoes", async (c) => {
   try {
-    const [{ list: waterLevels }, { list: rainfalls }] = await Promise.all([
+    const [{ list: waterLevels, source }, { list: rainfalls, source: rainSource }] = await Promise.all([
       getWaterLevelsResilient(c),
       getRainfallsResilient(c),
     ]);
+    if (source === "collecting" || rainSource === "collecting") return collectingResponse(c);
 
     const amphoeSet = new Set<string>();
     for (const w of waterLevels) {
@@ -451,31 +469,45 @@ app.get("/api/water-levels/graph", async (c) => {
       }
     }
 
-    // 2. Fallback ไปดึงสดจาก ThaiWater API
-    const result = await thaiWaterService.getWaterLevelGraph({
-      stationId: String(station_id),
-      startDate: String(start_date),
-      endDate: String(end_date),
-    });
+    // 2. ฐานข้อมูลยังไม่มีข้อมูลช่วงวันที่นี้ → ตอบกราฟว่างทันที แล้วไปดึงจาก ThaiWater API
+    //    เพื่อเก็บลง D1 เบื้องหลัง (Auto-Backfill) — ไม่มีการรอ upstream บน request path เด็ดขาด
+    if (c.executionCtx) {
+      const backfillJob = (async () => {
+        const result = await thaiWaterService.getWaterLevelGraph({
+          stationId: String(station_id),
+          startDate: String(start_date),
+          endDate: String(end_date),
+        }, true);
+        if (c.env?.DB && result.points && result.points.length > 0) {
+          await upsertWaterLevelGraphPoints(c.env.DB, stationIdNum, result.points, {
+            minBankMsl: result.minBankMsl,
+            warningLevelMsl: result.warningLevelMsl,
+            criticalLevelMsl: result.criticalLevelMsl,
+            groundLevelMsl: result.groundLevelMsl,
+          });
+        }
+        console.log(`[BG Graph Backfill] station ${station_id} ${start_date}..${end_date}: ${result.points?.length ?? 0} points`);
+      })().catch((err) => console.error("[BG Graph Backfill] failed:", err?.message));
 
-    // 3. บันทึกข้อมูลที่เพิ่งดึงได้ลง D1 ใน Background (Auto-Backfill)
-    if (c.env?.DB && result.points && result.points.length > 0) {
-      const db = c.env.DB;
-      const savePromise = upsertWaterLevelGraphPoints(db, stationIdNum, result.points, {
-        minBankMsl: result.minBankMsl,
-        warningLevelMsl: result.warningLevelMsl,
-        criticalLevelMsl: result.criticalLevelMsl,
-        groundLevelMsl: result.groundLevelMsl,
-      }).catch((err) => console.error("[D1 Auto-Save Error]:", err));
-
-      if (c.executionCtx) {
-        c.executionCtx.waitUntil(savePromise);
-      }
+      c.executionCtx.waitUntil(backfillJob);
     }
 
     c.header("Cache-Control", CACHE_CONTROL_SHORT);
-    c.header("X-Data-Source", "ThaiWater-API");
-    return c.json({ success: true, source: "thaiwater-api", data: result });
+    c.header("X-Data-Source", "Cloudflare-D1-Collecting");
+    return c.json({
+      success: true,
+      source: "d1-collecting",
+      data: {
+        stationId: stationIdNum,
+        startDate: startIso,
+        endDate: endIso,
+        minBankMsl: null,
+        warningLevelMsl: null,
+        criticalLevelMsl: null,
+        groundLevelMsl: null,
+        points: [],
+      },
+    });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }

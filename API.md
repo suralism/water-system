@@ -184,6 +184,8 @@ curl "https://water.ubon.online/api/water-levels/graph?station_id=269&start_date
 ```
 
 ### ตัวอย่าง Response (`200 OK`)
+> **หมายเหตุ:** ค่า `source` อธิบายที่มาของข้อมูล — `d1` (ฐานข้อมูล), `d1-collecting` (ฐานข้อมูลยังไม่มีข้อมูลช่วงวันที่นี้ ระบบกำลังเก็บข้อมูลเบื้องหลัง ครั้งถัดไปจะได้ข้อมูลครบ), `thaiwater-cache` (แคชในหน่วยความจำ ≤ 5 นาที) ระบบแสดงผลจากฐานข้อมูลเท่านั้น ไม่มีการรอ upstream API บน request path
+
 ```json
 {
   "success": true,
