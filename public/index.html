@@ -96,7 +96,7 @@
         <div class="sync-card">
           <div class="sync-status">
             <span class="status-dot pulsing" aria-hidden="true"></span>
-            <span id="cacheStatusText" aria-live="polite">กำลังโหลด...</span>
+            <span id="cacheStatusText" aria-live="polite">ข้อมูลสด</span>
           </div>
           <div class="sync-actions">
             <span class="auto-refresh-timer" title="อัปเดตอัตโนมัติทุก 5 นาที" aria-live="polite">
@@ -382,7 +382,7 @@
                   <span class="status-dot pulsing normal" id="execStatusDot"></span>
                   <strong class="exec-status-title" id="execStatusTitle">สรุปสถานการณ์ภาพรวม จ.อุบลราชธานี</strong>
                 </div>
-                <p class="exec-summary-text" id="execSummaryText">กำลังประมวลผลข้อมูลล่าสุดจากสถานีตรวจวัด...</p>
+                <p class="exec-summary-text" id="execSummaryText"></p>
               </div>
               <div class="exec-summary-right">
                 <span class="exec-time-tag" id="execTimeBadge"><i data-lucide="clock" class="icon-xs"></i> ข้อมูลสด</span>
@@ -485,7 +485,7 @@
                   <div class="ov-station-select-wrap">
                     <div class="select-wrapper ov-select-wrapper">
                       <select id="overviewStationSelect" aria-label="เลือกสถานีเพื่อดูกราฟ">
-                        <option value="">กำลังโหลดรายชื่อสถานี...</option>
+                        <option value="">ทุกสถานี</option>
                       </select>
                     </div>
                   </div>
@@ -535,7 +535,7 @@
                 <canvas id="overviewChartCanvas" role="img" aria-label="กราฟระดับน้ำรายสถานี"></canvas>
                 <div class="chart-loader hidden" id="ovChartLoader">
                   <div class="spinner" aria-hidden="true"></div>
-                  <span>กำลังดึงข้อมูลกราฟจากฐานข้อมูล...</span>
+                  <span>กำลังโหลดกราฟ...</span>
                 </div>
               </div>
             </div>
@@ -896,7 +896,7 @@
             <canvas id="waterLevelChart" role="img" aria-label="กราฟระดับน้ำย้อนหลัง"></canvas>
             <div class="chart-loader hidden" id="chartLoader">
               <div class="spinner" aria-hidden="true"></div>
-              <span>กำลังดึงข้อมูลกราฟจาก ThaiWater...</span>
+              <span>กำลังโหลดกราฟ...</span>
             </div>
           </div>
         </div>
@@ -953,7 +953,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof lucide !== "undefined") lucide.createIcons();

@@ -318,7 +318,8 @@ async function loadAllData() {
   const refreshBtn = document.getElementById("btnRefresh");
   if (refreshBtn) refreshBtn.classList.add("spinning");
   const cacheStatus = document.getElementById("cacheStatusText");
-  if (cacheStatus) cacheStatus.textContent = "กำลังดึงข้อมูลสด...";
+  // หมายเหตุ: ไม่แสดงข้อความ "กำลังดึงข้อมูล..." ให้ผู้ใช้เห็นแล้ว —
+  // ข้อมูลมาจาก D1 ทันที (D1-first) ส่วนการดึงจาก upstream เกิดที่หลังบ้านเงียบ ๆ
 
   try {
     const [waterLevelsRes, rainfallsRes, amphoesRes] = await Promise.all([
@@ -356,7 +357,8 @@ async function loadAllData() {
     checkCriticalAudioAlert();
   } catch (err) {
     console.error("Failed to load dashboard data:", err);
-    if (cacheStatus) cacheStatus.textContent = "กำลังโหลดข้อมูล...";
+    // แสดงเฉพาะเคสล้มเหลวจริง (ไม่ใช่ loading state ปกติ)
+    if (cacheStatus) cacheStatus.textContent = "อัปเดตไม่สำเร็จ กำลังลองใหม่...";
     // ลองดึงใหม่อีกครั้งหลังจาก 2 วินาทีในกรณีเริ่มต้นระบบ
     setTimeout(() => {
       if (allWaterLevels.length === 0) {
@@ -1443,7 +1445,7 @@ async function openWaterModal(stationId) {
   const changeHintEl = document.getElementById("modalWaterChangeHint");
   const changeBox = document.getElementById("modalChangeBox");
   if (changeValEl) {
-    changeValEl.textContent = "กำลังคำนวณ...";
+    changeValEl.textContent = "-";
     changeValEl.className = "metric-num text-muted";
   }
   if (changeUnitEl) changeUnitEl.textContent = "";
@@ -2711,7 +2713,7 @@ async function loadOverviewChart() {
   const changeUnit = document.getElementById("ovStatChangeUnit");
   const changeBadge = document.getElementById("ovStatChangeBadge");
   if (changeVal) {
-    changeVal.textContent = "กำลังคำนวณ...";
+    changeVal.textContent = "-";
     changeVal.className = "ov-stat-val text-muted";
   }
   if (changeUnit) changeUnit.textContent = "";
